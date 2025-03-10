@@ -5,7 +5,7 @@ import { ResultCode } from '@src/driver/result-code'
 type DriverResultMessageEnqueued = {
     messageId: string
     queueId: string
-    resultType: 'MESSAGE_ENQUEUED'
+    resultType: 'MESSAGE_ENQUEUED' | 'MESSAGE_UPDATED'
     scheduleId: string
 }
 
@@ -28,7 +28,7 @@ type DriverResultScheduleExhausted = {
 type QueryResultMessageEnqueued = {
     o_message_id: string
     o_queue_id: string
-    o_result_code: ResultCode.MESSAGE_ENQUEUED
+    o_result_code: ResultCode.MESSAGE_ENQUEUED | ResultCode.MESSAGE_UPDATED
     o_schedule_id: string
 }
 
@@ -86,6 +86,13 @@ export const messageSchedule = async (params: {
             messageId: result.o_message_id,
             queueId: result.o_queue_id,
             resultType: 'MESSAGE_ENQUEUED',
+            scheduleId: result.o_schedule_id,
+        }
+    } else if (result.o_result_code === ResultCode.MESSAGE_UPDATED) {
+        return {
+            messageId: result.o_message_id,
+            queueId: result.o_queue_id,
+            resultType: 'MESSAGE_UPDATED',
             scheduleId: result.o_schedule_id,
         }
     } else if (result.o_result_code === ResultCode.QUEUE_CAPACITY_EXCEEDED) {
