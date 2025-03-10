@@ -33,10 +33,10 @@ type QueryResult =
     | QueryResultMessageUnlocked
 
 export const messageUnlock = async (params: {
-    dbClient: DatabaseClient
+    databaseClient: DatabaseClient
     schema: string
 }): Promise<DriverResult> => {
-    const result = await params.dbClient.query(sql.build `
+    const result = await params.databaseClient.query(sql.build `
         SELECT * FROM ${sql.ref(params.schema)}.message_unlock()
     `).then(res => res.rows[0]) as QueryResult
 

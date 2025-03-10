@@ -35,7 +35,7 @@ const deployment = new Deployment({
 const queue = deployment.queue('myQueue')
 
 for (let i = 0; i < 500; i += 1) {
-  await queue.message.enqueue({ payload: `Ping: ${i}`, dbClient: pool })
+  await queue.message.enqueue({ payload: `Ping: ${i}`, databaseClient: pool })
 }
 
 const processFn = async (msg: string) => console.log(msg)

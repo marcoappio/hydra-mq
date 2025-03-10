@@ -4,14 +4,14 @@ import { ResultCode } from '@src/driver/result-code'
 
 type DriverResult =
     | { resultType: 'QUEUE_CAPACITY_EXCEEDED' }
-    | { messageId: string, resultType: 'MESSAGE_ADDED' | 'MESSAGE_UPDATED' }
+    | { messageId: string, resultType: 'MESSAGE_ENQUEUED' | 'MESSAGE_UPDATED' }
 
 type QueryResult =
     | { o_message_id: null, o_result_code: ResultCode.QUEUE_CAPACITY_EXCEEDED }
     | { o_message_id: string, o_result_code: ResultCode.MESSAGE_ENQUEUED | ResultCode.MESSAGE_UPDATED }
 
 export const messageEnqueue = async (params: {
-    dbClient: DatabaseClient
+    databaseClient: DatabaseClient
     deduplicationId: string | null
     numAttempts: number
     payload: string
@@ -21,7 +21,7 @@ export const messageEnqueue = async (params: {
     staleSecs: number
     timeoutSecs: number
 }): Promise<DriverResult> => {
-    const result = await params.dbClient.query(sql.build `
+    const result = await params.databaseClient.query(sql.build `
         SELECT * FROM ${sql.ref(params.schema)}.message_enqueue(
             ${sql.value(params.queueId)},
             ${sql.value(params.payload)},
@@ -36,7 +36,7 @@ export const messageEnqueue = async (params: {
     if (result.o_result_code === ResultCode.QUEUE_CAPACITY_EXCEEDED) {
         return { resultType: 'QUEUE_CAPACITY_EXCEEDED' }
     } else if (result.o_result_code === ResultCode.MESSAGE_ENQUEUED) {
-        return { messageId: result.o_message_id, resultType: 'MESSAGE_ADDED' }
+        return { messageId: result.o_message_id, resultType: 'MESSAGE_ENQUEUED' }
     } else if (result.o_result_code === ResultCode.MESSAGE_UPDATED) {
         return { messageId: result.o_message_id, resultType: 'MESSAGE_UPDATED' }
     } else {

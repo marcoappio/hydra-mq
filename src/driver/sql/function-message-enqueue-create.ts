@@ -81,14 +81,17 @@ export const functionMessageEnqueueCreateSql = (params: {
                 v_status,
                 v_now,
                 v_now
-            ) ON CONFLICT ON CONSTRAINT message_deduplication_id_ix DO UPDATE SET
+            ) ON CONFLICT (queue_id, deduplication_id) 
+            WHERE status = ${sql.value(MessageStatus.WAITING)}
+            DO UPDATE SET
                 payload = EXCLUDED.payload,
                 priority = EXCLUDED.priority,
                 timeout_secs = EXCLUDED.timeout_secs,
                 stale_secs = EXCLUDED.stale_secs,
                 num_attempts = EXCLUDED.num_attempts,
-                updated_at = EXCLUDED.created_at;
-            RETURNING id INTO v_message;
+                updated_at = EXCLUDED.created_at
+            RETURNING id 
+            INTO v_message;
 
             IF v_message.id != v_message_id THEN
                 RETURN QUERY SELECT 

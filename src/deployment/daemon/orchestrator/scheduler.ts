@@ -7,7 +7,7 @@ import { messageSchedule } from '@src/driver/message-schedule'
 export class DaemonScheduler {
 
     private readonly eventHandler: HydraEventHandler
-    private readonly dbClient: DatabaseClient
+    private readonly databaseClient: DatabaseClient
     private readonly schema: string
     private readonly timeoutSecs: number
     private readonly eggTimer: EggTimer
@@ -19,7 +19,7 @@ export class DaemonScheduler {
 
     constructor(params: {
         daemonId: string | null
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         eventHandler: HydraEventHandler
         schema: string
         timeoutSecs: number
@@ -28,7 +28,7 @@ export class DaemonScheduler {
         this.daemonId = params.daemonId
         this.schema = params.schema
         this.timeoutSecs = params.timeoutSecs
-        this.dbClient = params.dbClient
+        this.databaseClient = params.databaseClient
         this.semaphore = new Semaphore(0)
         this.eggTimer = new EggTimer(() => this.semaphore.release())
         this.shouldStop = false
@@ -39,7 +39,7 @@ export class DaemonScheduler {
     private async run() {
         while (!this.shouldStop) {
             const result = await messageSchedule({
-                dbClient: this.dbClient,
+                databaseClient: this.databaseClient,
                 schema: this.schema,
             })
 

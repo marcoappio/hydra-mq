@@ -16,7 +16,7 @@ export class QueueMessageNamespace {
     }
 
     async enqueue(params: {
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         deduplicationId?: string
         numAttempts?: number
         payload: string
@@ -25,7 +25,7 @@ export class QueueMessageNamespace {
         timeoutSecs?: number
     }) {
         return messageEnqueue({
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
             deduplicationId: params.deduplicationId ?? null,
             numAttempts: params.numAttempts ?? MESSAGE_NUM_ATTEMPTS,
             payload: params.payload,

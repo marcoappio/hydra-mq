@@ -28,7 +28,7 @@ export class DeploymentDaemonNamespace {
 
     processor(params: {
         daemonId?: string
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         executionConcurrency?: number
         processFn: ProcessFn
         queuePrefix?: string
@@ -36,7 +36,7 @@ export class DeploymentDaemonNamespace {
     }) {
         return new DaemonProcessor({
             daemonId: params.daemonId ?? null,
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
             eventHandler: this.onEvent.bind(this),
             executionConcurrency: params.executionConcurrency ?? DAEMON_PROCESSOR_EXECUTION_CONCURRENCY,
             processFn: params.processFn,
@@ -49,14 +49,14 @@ export class DeploymentDaemonNamespace {
     orchestrator(params: {
         cleanTimeoutSecs?: number
         daemonId?: string
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         scheduleTimeoutSecs?: number
         unlockTimeoutSecs?: number
     }) {
         return new DaemonOrchestrator({
             cleanTimeoutSecs: params.cleanTimeoutSecs ?? DAEMON_ORCHESTRATOR_CLEAN_TIMEOUT_SECS,
             daemonId: params.daemonId ?? null,
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
             eventHandler: this.onEvent.bind(this),
             scheduleTimeoutSecs: params.scheduleTimeoutSecs ?? DAEMON_ORCHESTRATOR_SCHEDULE_TIMEOUT_SECS,
             schema: this.schema,

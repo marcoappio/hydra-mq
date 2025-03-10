@@ -7,7 +7,7 @@ import { messageUnlock } from '@src/driver/message-unlock'
 export class DaemonUnlocker {
 
     private readonly eventHandler: HydraEventHandler
-    private readonly dbClient: DatabaseClient
+    private readonly databaseClient: DatabaseClient
     private readonly schema: string
     private readonly timeoutSecs: number
     private readonly eggTimer: EggTimer
@@ -19,7 +19,7 @@ export class DaemonUnlocker {
 
     constructor(params: {
         daemonId: string | null
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         eventHandler: HydraEventHandler
         schema: string
         timeoutSecs: number
@@ -29,7 +29,7 @@ export class DaemonUnlocker {
         this.schema = params.schema
         this.eventHandler = params.eventHandler
         this.timeoutSecs = params.timeoutSecs
-        this.dbClient = params.dbClient
+        this.databaseClient = params.databaseClient
         this.semaphore = new Semaphore(0)
         this.eggTimer = new EggTimer(() => this.semaphore.release())
         this.shouldStop = false
@@ -40,7 +40,7 @@ export class DaemonUnlocker {
         while (!this.shouldStop) {
 
             const result = await messageUnlock({
-                dbClient: this.dbClient,
+                databaseClient: this.databaseClient,
                 schema: this.schema,
             })
 

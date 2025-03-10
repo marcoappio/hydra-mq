@@ -27,11 +27,11 @@ type QueryResult =
     | QueryResultMessageLocked
 
 export const messageLock = async (params: {
-    dbClient: DatabaseClient
+    databaseClient: DatabaseClient
     messageId: string
     schema: string
 }): Promise<DriverResult> => {
-    const result = await params.dbClient.query(sql.build `
+    const result = await params.databaseClient.query(sql.build `
         SELECT * FROM ${sql.ref(params.schema)}.message_lock(
             ${sql.value(params.messageId)}
         )

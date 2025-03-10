@@ -17,7 +17,7 @@ export class DaemonProcessor {
 
     constructor(params: {
         daemonId: string | null
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         eventHandler: HydraEventHandler
         executionConcurrency: number
         processFn: ProcessFn
@@ -27,7 +27,7 @@ export class DaemonProcessor {
 
     }) {
         this.dequeueModule = new DaemonProcessorDequeueModule({
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
             queuePrefix: params.queuePrefix,
             schema: params.schema,
             timeoutSecs: params.timeoutSecs,
@@ -41,7 +41,7 @@ export class DaemonProcessor {
         for (let ix = 0; ix < params.executionConcurrency; ix += 1) {
             this.executionModules.push(new DaemonProcessorExecutionModule({
                 daemonId: params.daemonId,
-                dbClient: params.dbClient,
+                databaseClient: params.databaseClient,
                 directory: directory,
                 eventHandler: params.eventHandler,
                 processFn: params.processFn,

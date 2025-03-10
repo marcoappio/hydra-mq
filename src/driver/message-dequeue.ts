@@ -39,11 +39,11 @@ type DriverResult =
     | DriverResultMessageNotAvailable
 
 export const messageDequeue = async (params: {
-    dbClient: DatabaseClient
+    databaseClient: DatabaseClient
     queuePrefix: string
     schema: string
 }): Promise<DriverResult> => {
-    const result = await params.dbClient.query(sql.build`
+    const result = await params.databaseClient.query(sql.build`
         SELECT * FROM ${sql.ref(params.schema)}.message_dequeue(
             ${sql.value(params.queuePrefix)}
         )

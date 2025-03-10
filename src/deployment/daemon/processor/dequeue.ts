@@ -23,7 +23,7 @@ type RequestCallback = (result: DequeueResult) => void
 
 export class DaemonProcessorDequeueModule {
 
-    private readonly dbClient: DatabaseClient
+    private readonly databaseClient: DatabaseClient
     private readonly schema: string
     private readonly timeoutSecs: number
     private readonly eggTimer: EggTimer
@@ -35,7 +35,7 @@ export class DaemonProcessorDequeueModule {
     private shouldStop: boolean
 
     constructor(params: {
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         queuePrefix: string
         schema: string
         timeoutSecs: number
@@ -43,7 +43,7 @@ export class DaemonProcessorDequeueModule {
         this.schema = params.schema
         this.semaphore = new Semaphore(0)
         this.timeoutSecs = params.timeoutSecs
-        this.dbClient = params.dbClient
+        this.databaseClient = params.databaseClient
         this.eggTimer = new EggTimer(() => this.semaphore.release())
         this.queuePrefix = params.queuePrefix
         this.requestQueue = []
@@ -59,7 +59,7 @@ export class DaemonProcessorDequeueModule {
             }
 
             const dequeueResult = await messageDequeue({
-                dbClient: this.dbClient,
+                databaseClient: this.databaseClient,
                 queuePrefix: this.queuePrefix,
                 schema: this.schema,
             })
