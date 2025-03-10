@@ -7,7 +7,7 @@ import { messageClean } from '@src/driver/message-clean'
 export class DaemonCleaner {
 
     private readonly eventHandler: HydraEventHandler
-    private readonly dbClient: DatabaseClient
+    private readonly databaseClient: DatabaseClient
     private readonly schema: string
     private readonly timeoutSecs: number
     private readonly eggTimer: EggTimer
@@ -19,7 +19,7 @@ export class DaemonCleaner {
 
     constructor(params: {
         daemonId: string | null
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         eventHandler: HydraEventHandler
         schema: string
         timeoutSecs: number
@@ -29,7 +29,7 @@ export class DaemonCleaner {
         this.schema = params.schema
         this.eventHandler = params.eventHandler
         this.timeoutSecs = params.timeoutSecs
-        this.dbClient = params.dbClient
+        this.databaseClient = params.databaseClient
         this.semaphore = new Semaphore(0)
         this.eggTimer = new EggTimer(() => this.semaphore.release())
         this.shouldStop = false
@@ -40,7 +40,7 @@ export class DaemonCleaner {
         while (!this.shouldStop) {
 
             const result = await messageClean({
-                dbClient: this.dbClient,
+                databaseClient: this.databaseClient,
                 schema: this.schema,
             })
 

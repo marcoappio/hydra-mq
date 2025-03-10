@@ -16,12 +16,12 @@ export class QueueConfigNamespace {
     }
 
     async set(params: {
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         maxCapacity: number | null
         maxConcurrency: number | null
     }) {
         return queueConfigSet({
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
             maxCapacity: params.maxCapacity,
             maxConcurrency: params.maxConcurrency,
             queueId: this.queueId,
@@ -30,10 +30,10 @@ export class QueueConfigNamespace {
     }
 
     async clear(params: {
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
     }) {
         return queueConfigClear({
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
             queueId: this.queueId,
             schema: this.schema,
         })

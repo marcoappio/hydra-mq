@@ -13,7 +13,7 @@ export class DaemonOrchestrator {
     constructor(params: {
         cleanTimeoutSecs: number
         daemonId: string | null
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         eventHandler: HydraEventHandler
         scheduleTimeoutSecs: number
         schema: string
@@ -21,21 +21,21 @@ export class DaemonOrchestrator {
     }) {
         this.cleanModule = new DaemonOrchestratorCleanModule({
             daemonId: params.daemonId,
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
             eventHandler: params.eventHandler,
             schema: params.schema,
             timeoutSecs: params.cleanTimeoutSecs,
         })
         this.scheduleModule = new DaemonOrchestratorScheduleModule({
             daemonId: params.daemonId,
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
             eventHandler: params.eventHandler,
             schema: params.schema,
             timeoutSecs: params.scheduleTimeoutSecs,
         })
         this.unlockModule = new DaemonOrchestratorUnlockModule({
             daemonId: params.daemonId,
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
             eventHandler: params.eventHandler,
             schema: params.schema,
             timeoutSecs: params.unlockTimeoutSecs,

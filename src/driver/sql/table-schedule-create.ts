@@ -12,6 +12,7 @@ export const tableScheduleCreateSql = (params: {
             timeout_secs INTEGER NOT NULL,
             stale_secs INTEGER NOT NULL,
             num_attempts INTEGER NOT NULL,
+            deduplication_id TEXT,
             cron_last_mins INTEGER NOT NULL,
             cron_expr_mins INTEGER[] NOT NULL,
             cron_expr_hours INTEGER[] NOT NULL,

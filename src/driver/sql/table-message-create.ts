@@ -13,13 +13,23 @@ export const tableMessageCreateSql = (params: {
             timeout_secs INTEGER NOT NULL,
             stale_secs INTEGER NOT NULL,
             num_attempts INTEGER NOT NULL,
+            deduplication_id TEXT,
             status INTEGER NOT NULL,
             unlocked_at TIMESTAMP,
             processed_at TIMESTAMP,
             stale_at TIMESTAMP,
             created_at TIMESTAMP NOT NULL,
+            updated_at TIMESTAMP NOT NULL,
             PRIMARY KEY (id)
         );
+    `,
+
+    sql.build `
+        CREATE UNIQUE INDEX message_deduplication_id_ix
+        ON ${params.schema}.message (
+            queue_id,
+            deduplication_id
+        ) WHERE status = ${sql.value(MessageStatus.WAITING)};
     `,
 
     sql.build `

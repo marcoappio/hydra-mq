@@ -106,12 +106,19 @@ export const functionMessageScheduleCreateSql = (params: {
                 v_schedule.priority,
                 v_schedule.timeout_secs,
                 v_schedule.stale_secs,
-                v_schedule.num_attempts
+                v_schedule.num_attempts,
+                v_schedule.deduplication_id
             );
 
             IF v_enqueue.o_result_code = ${sql.value(ResultCode.MESSAGE_ENQUEUED)} THEN
                 RETURN QUERY SELECT 
                     ${sql.value(ResultCode.MESSAGE_ENQUEUED)}, 
+                    v_schedule.id, 
+                    v_enqueue.o_message_id, 
+                    v_schedule.queue_id;
+            ELSIF v_enqueue.o_result_code = ${sql.value(ResultCode.MESSAGE_UPDATED)} THEN
+                RETURN QUERY SELECT 
+                    ${sql.value(ResultCode.MESSAGE_UPDATED)}, 
                     v_schedule.id, 
                     v_enqueue.o_message_id, 
                     v_schedule.queue_id;

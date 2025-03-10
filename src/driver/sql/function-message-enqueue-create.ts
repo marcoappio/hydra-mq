@@ -12,7 +12,8 @@ export const functionMessageEnqueueCreateSql = (params: {
             p_priority INTEGER,
             p_timeout_secs INTEGER,
             p_stale_secs INTEGER,
-            p_num_attempts INTEGER
+            p_num_attempts INTEGER,
+            p_deduplication_id TEXT
         )
         RETURNS TABLE (
             o_result_code INTEGER,
@@ -23,6 +24,7 @@ export const functionMessageEnqueueCreateSql = (params: {
             v_status INTEGER;
             v_chunks TEXT[];
             v_message_id UUID := GEN_RANDOM_UUID();
+            v_message RECORD;
             v_queue_config RECORD;
         BEGIN
             SELECT 
@@ -63,8 +65,10 @@ export const functionMessageEnqueueCreateSql = (params: {
                 timeout_secs,
                 stale_secs,
                 num_attempts,
+                deduplication_id,
                 status,
-                created_at
+                created_at,
+                updated_at
             ) VALUES (
                 v_message_id,
                 p_queue_id,
@@ -73,9 +77,28 @@ export const functionMessageEnqueueCreateSql = (params: {
                 p_timeout_secs,
                 p_stale_secs,
                 p_num_attempts,
+                p_deduplication_id,
                 v_status,
+                v_now,
                 v_now
-            );
+            ) ON CONFLICT (queue_id, deduplication_id) 
+            WHERE status = ${sql.value(MessageStatus.WAITING)}
+            DO UPDATE SET
+                payload = EXCLUDED.payload,
+                priority = EXCLUDED.priority,
+                timeout_secs = EXCLUDED.timeout_secs,
+                stale_secs = EXCLUDED.stale_secs,
+                num_attempts = EXCLUDED.num_attempts,
+                updated_at = EXCLUDED.created_at
+            RETURNING id 
+            INTO v_message;
+
+            IF v_message.id != v_message_id THEN
+                RETURN QUERY SELECT 
+                    ${sql.value(ResultCode.MESSAGE_UPDATED)}, 
+                    v_message.id;
+                RETURN;
+            END IF;
 
             v_chunks := ${params.schema}.prefixes_generate(p_queue_id);
 

@@ -4,7 +4,8 @@ import { sql } from '@src/core/sql'
 
 export const scheduleSet = async (params: {
     cronExpr: string
-    dbClient: DatabaseClient
+    databaseClient: DatabaseClient
+    deduplicationId: string | null
     numAttempts: number
     payload: string
     priority: number | null
@@ -19,7 +20,7 @@ export const scheduleSet = async (params: {
         throw new Error(`Invalid cron expression: ${params.cronExpr}`)
     }
 
-    await params.dbClient.query(sql.build `
+    await params.databaseClient.query(sql.build `
         SELECT * FROM ${sql.ref(params.schema)}.schedule_set(
             ${sql.value(params.scheduleId)},
             ${sql.value(params.queueId)},
@@ -28,6 +29,7 @@ export const scheduleSet = async (params: {
             ${sql.value(params.timeoutSecs)},
             ${sql.value(params.staleSecs)},
             ${sql.value(params.numAttempts)},
+            ${sql.value(params.deduplicationId)},
             ${sql.array(parsedCronExpr.mins)},
             ${sql.array(parsedCronExpr.hours)},
             ${sql.array(parsedCronExpr.days)},

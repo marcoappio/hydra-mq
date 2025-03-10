@@ -13,7 +13,7 @@ export type ProcessFn = (payload: string, metadata: {
 export class DaemonProcessorExecutionModule {
 
     private readonly eventHandler: HydraEventHandler
-    private readonly dbClient: DatabaseClient
+    private readonly databaseClient: DatabaseClient
     private readonly schema: string
     private readonly daemonId: string | null
     private readonly promise: Promise<void>
@@ -22,7 +22,7 @@ export class DaemonProcessorExecutionModule {
 
     constructor(params: {
         daemonId: string | null
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
         directory: DaemonProcessorDirectory
         eventHandler: HydraEventHandler
         processFn: ProcessFn
@@ -31,7 +31,7 @@ export class DaemonProcessorExecutionModule {
         this.schema = params.schema
         this.directory = params.directory
         this.processFn = params.processFn
-        this.dbClient = params.dbClient
+        this.databaseClient = params.databaseClient
         this.daemonId = params.daemonId
         this.eventHandler = params.eventHandler
         this.promise = this.run()
@@ -69,7 +69,7 @@ export class DaemonProcessorExecutionModule {
 
             if (isProcessed) {
                 const finalizeResult = await messageFinalize({
-                    dbClient: this.dbClient,
+                    databaseClient: this.databaseClient,
                     messageId: dequeueResult.messageId,
                     schema: this.schema,
                 })
@@ -87,7 +87,7 @@ export class DaemonProcessorExecutionModule {
 
             } else if (dequeueResult.numAttempts <= 1) {
                 const finalizeResult = await messageFinalize({
-                    dbClient: this.dbClient,
+                    databaseClient: this.databaseClient,
                     messageId: dequeueResult.messageId,
                     schema: this.schema,
                 })
@@ -105,7 +105,7 @@ export class DaemonProcessorExecutionModule {
                 })
             } else {
                 const lockResult = await messageLock({
-                    dbClient: this.dbClient,
+                    databaseClient: this.databaseClient,
                     messageId: dequeueResult.messageId,
                     schema: this.schema,
                 })

@@ -20,7 +20,8 @@ export class Schedule {
 
     async set(params: {
         cronExpr: string
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
+        deduplicationId?: string
         numAttempts?: number
         payload: string
         priority?: number
@@ -29,7 +30,8 @@ export class Schedule {
     }) {
         return scheduleSet({
             cronExpr: params.cronExpr,
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
+            deduplicationId: params.deduplicationId ?? null,
             numAttempts: params.numAttempts ?? MESSAGE_NUM_ATTEMPTS,
             payload: params.payload,
             priority: params.priority ?? MESSAGE_PRIORITY,
@@ -42,10 +44,10 @@ export class Schedule {
     }
 
     async clear(params: {
-        dbClient: DatabaseClient
+        databaseClient: DatabaseClient
     }) {
         return scheduleClear({
-            dbClient: params.dbClient,
+            databaseClient: params.databaseClient,
             queueId: this.queueId,
             scheduleId: this.scheduleId,
             schema: this.schema,
