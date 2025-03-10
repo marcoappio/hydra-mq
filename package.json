@@ -18,16 +18,24 @@
   "files": [
     "dist/"
   ],
+  "auto": {
+    "plugins": [
+      "npm"
+    ]
+  },
   "scripts": {
+    "build": "bun run script/build.ts",
     "lint": "eslint --ext .ts,.tsx,.js src",
-    "typecheck": "tsc --noEmit",
-    "build": "bun run script/build.ts"
+    "release": "bun run build && auto shipit",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@auto-it/npm": "11.3.0",
     "@types/bun": "1.2.0",
     "@types/pg": "8.11.11",
     "@typescript-eslint/eslint-plugin": "5.62.0",
     "@typescript-eslint/parser": "6.21.0",
+    "auto": "11.3.0",
     "bun-plugin-dts": "0.3.0",
     "eslint": "8.41.0",
     "eslint-plugin-import": "2.31.0",
