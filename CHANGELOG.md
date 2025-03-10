@@ -1,3 +1,15 @@
+# v0.2.0 (Mon Mar 10 2025)
+
+#### 🚀 Enhancement
+
+- Add Deduplication ID [#3](https://github.com/marcoappio/hydra-mq/pull/3) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.1.3 (Mon Mar 10 2025)
 
 #### 🐛 Bug Fix
