@@ -1,3 +1,15 @@
+# v0.1.3 (Mon Mar 10 2025)
+
+#### 🐛 Bug Fix
+
+- Add TypeDoc theme [#2](https://github.com/marcoappio/hydra-mq/pull/2) ([@isaachinman](https://github.com/isaachinman))
+
+#### Authors: 1
+
+- Isaac Hinman ([@isaachinman](https://github.com/isaachinman))
+
+---
+
 # v0.1.2 (Mon Mar 10 2025)
 
 #### 🐛 Bug Fix
