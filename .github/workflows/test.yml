@@ -18,4 +18,4 @@ jobs:
       - name: Upload code coverage
         uses: paambaati/codeclimate-action@v5.0.0
         env:
-          CC_TEST_REPORTER_ID: 88f007686d0ca0fded5bfb4a3b14acd6409cffa0de8ffc1c03043519f2f72db2
+          CC_TEST_REPORTER_ID: e7a50fab5135f11cac061309a73ccd8a2a8dd0d7ae583605758dcbe8d1a6b4a6
