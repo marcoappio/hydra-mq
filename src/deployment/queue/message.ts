@@ -2,6 +2,10 @@ import { MESSAGE_NUM_ATTEMPTS, MESSAGE_PRIORITY, MESSAGE_STALE_SECS, MESSAGE_TIM
 import type { DatabaseClient } from '@src/core/database-client'
 import { messageEnqueue } from '@src/driver/message-enqueue'
 
+export type EnqueueResult =
+    | { resultType: 'QUEUE_CAPACITY_EXCEEDED' }
+    | { messageId: string, resultType: 'MESSAGE_ENQUEUED' | 'MESSAGE_UPDATED' }
+
 export class QueueMessageNamespace {
 
     private readonly schema: string
@@ -23,7 +27,7 @@ export class QueueMessageNamespace {
         priority?: number
         staleSecs?: number
         timeoutSecs?: number
-    }) {
+    }): Promise<EnqueueResult> {
         return messageEnqueue({
             databaseClient: params.databaseClient,
             deduplicationId: params.deduplicationId ?? null,
