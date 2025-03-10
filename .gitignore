@@ -1,0 +1,11 @@
+# Dependencies
+node_modules
+
+# Dist
+dist
+
+# Coverage
+coverage
+
+# Docs
+docs/

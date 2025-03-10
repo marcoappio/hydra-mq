@@ -1,0 +1,8 @@
+telemetry = false
+
+[install]
+exact = true
+saveTextLockfile = true
+
+[test]
+coverageReporter  = ["lcov"]

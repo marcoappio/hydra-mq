@@ -1,0 +1,21 @@
+name: test
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.0
+
+      - run: bun install
+
+      - run: bun test --coverage
+
+      - name: Upload code coverage
+        uses: paambaati/codeclimate-action@v5.0.0
+        env:
+          CC_TEST_REPORTER_ID: 88f007686d0ca0fded5bfb4a3b14acd6409cffa0de8ffc1c03043519f2f72db2
