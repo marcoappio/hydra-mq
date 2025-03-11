@@ -1,8 +1,10 @@
-# HydraMQ
+Documentation is available at [hydra-mq.marcoapp.io](https://hydra-mq.marcoapp.io/).
 
 <img src="https://i.imgur.com/DDaUXy8.jpeg" alt="hydra-mq" style="width: 400px; max-width: 100%; margin-bottom: 16px;" />
 
 A high performance Postgres message queue implementation for NodeJs/TypeScript.
+
+<br />
 
 ## Features
 
@@ -16,6 +18,8 @@ A high performance Postgres message queue implementation for NodeJs/TypeScript.
   - Configurable message retry settings.
   - DB client agnostic.
   - High throughput: > 10,000 jobs per second.
+
+<br />
 
 ## Quick Look
 
@@ -44,6 +48,8 @@ deployment.daemon.processor({ processFn, databaseClient: pool })
 deployment.daemon.orchestrator({ databaseClient: pool })
 ```
 
+<br />
+
 ## Setup & Installation
 
 HydraMQ can be installed from npm via:
@@ -65,6 +71,8 @@ const sqlCommands: string[] = deployment.installation()
 ```
 
 N.B. the set of SQL commands generated is **not** idempotent and thus it is strongly recommended that they are executed within a transaction.
+
+<br />
 
 ## Basic Usage
 
@@ -92,6 +100,8 @@ It is important to spawn _at least_ one orchestrator daemon. The orchestrator is
 ```typescript
 const orchestrator = deployment.daemon.orchestrator({ databaseClient: pool })
 ```
+
+<br />
 
 ## Processor Concurrency
 
@@ -133,6 +143,8 @@ Finally, it is worth noting that HydraMQ daemons all run on a single thread. Thi
 
 Unlike other queuing solutions, there is no need to ensure the orchestrator daemon remains a singleton. Multiple orchestrators spanning multiple processes will behave well with one another – thus simply naively replicating your HydraMQ worker process is perfectly sensible vs. having to separate the orchestrator into its own dedicated singleton process.
 
+<br />
+
 ## Multiple Queues
 
 As mentioned in the features section, HydraMQ scales to thousands of queues (maximum throughput actually _increases_ as jobs are distributed across more queues) with no performance penalty. 
@@ -160,6 +172,8 @@ In the example above, we show a pattern by which certain workloads can be priori
 
 N.B. queue names must be dot-separated (i.e. `foo.bar.baz`). Prefix matching will only work at dot boundaries and not within the individual name segments (e.g. `foo.bar` will match with `foo.bar.baz`, but `foo.ba` will not).
 
+<br />
+
 ## Queue Configuration
 
 Queues can be configured to constrain maximum concurrency. Queues with a specified maximum concurrency will only allow a certain number of messages to be processed simultaneously across all processors (N.B. this concurrency limit is truly global and thus will work across distinct daemons/processes/servers). Queues can also be configured to constrain their total capacity. Queues with a specified maximum capacity will prevent further messages from being enqueued should their limit be reached. 
@@ -181,6 +195,8 @@ await queue.config.clear({
 
 N.B. changes to concurrency don't propagate instantly and messages currently being procesed will certainly never be "evicted" in response to concurrency changes.
 
+<br />
+
 ## Prioritized Messages
 
 Messages can be prioritized - ensuring they are processed faster than others by setting the `priority` argument when enqueuing a message. All messages with specified priorities are processed _before_ those without any specific priority:
@@ -192,6 +208,8 @@ await queue.message.enqueue({
   priority: 10,
 })
 ```
+
+<br />
 
 ## Retryable Messages
 
@@ -205,6 +223,8 @@ await queue.message.enqueue({
   timeoutSecs: 60 * 5,
 })
 ```
+
+<br />
 
 ## Scheduled Messages
 
@@ -229,6 +249,8 @@ await queue
   })
 ```
 
+<br />
+
 ## Graceful Shutdown & Cleaning
 
 Daemons (processors and orchestrators) can be gracefully shutdown by awaiting their `stop()` method. This ensures daemons finish any tasks they are currently working on before exiting.
@@ -238,6 +260,8 @@ Failure to gracefully shut down daemons (particularly processors) may result in 
 That being said, hard crashes are a fact of life and ultimately can't be avoided. As such, we must be able to recover from theser situations. To that end, the orchestrator regularly performs a "clean" operation that sweeps these "stuck" jobs. It does this by considering all jobs that have been processing for longer than a specified `staleSecs` (set when a message is enqueued) as "stuck".
 
 N.B. Make sure to set `staleSecs` such that it is larger than the expected amount of time required to process a job as otherwise the orchestrator is liable to "clean" it even if not stuck. By default this is set to 1 hour.
+
+<br />
 
 ## Other Database Clients
 
@@ -256,6 +280,8 @@ export class MyDatabaseClient implements DatabaseClient {
   }
 }
 ```
+
+<br />
 
 ## Events 
 
@@ -279,6 +305,8 @@ deployment.daemon.addEventHandler(event => {
 })
 ```
 
+<br />
+
 ## Message Lifecycle
 
 When a message is enqueued, it will start in the `READY` state if the queue has sufficient open concurrency slots. If this is not the case, messages will begin in a `WAITING` state.
@@ -292,6 +320,8 @@ If processing fails with retries remaining, instead of being deleted, it will be
 Similar to how message enqueuing works, the orchestrator will transition locked messages into either the `WAITING` or `READY` state when they are ready for attempted re-processing.
 
 Messages that have been stuck in the `PROCESSING` state for too long, will either be deleted or transitioned into a `LOCKED` state by the orchestrator for re-processing.
+
+<br />
 
 ## Polling & Responsiveness
 
