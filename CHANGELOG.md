@@ -1,3 +1,15 @@
+# v0.2.2 (Tue Mar 11 2025)
+
+#### 🐛 Bug Fix
+
+- [HYDR-5] Link hosted documentation in README [#5](https://github.com/marcoappio/hydra-mq/pull/5) ([@isaachinman](https://github.com/isaachinman))
+
+#### Authors: 1
+
+- Isaac Hinman ([@isaachinman](https://github.com/isaachinman))
+
+---
+
 # v0.2.1 (Mon Mar 10 2025)
 
 #### 🐛 Bug Fix
