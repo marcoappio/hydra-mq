@@ -25,6 +25,7 @@
   },
   "scripts": {
     "build": "bun run script/build.ts",
+    "generate-docs": "bun typedoc src/index.ts --plugin typedoc-github-theme",
     "lint": "eslint --ext .ts,.tsx,.js src",
     "release": "bun run build && auto shipit",
     "typecheck": "tsc --noEmit"
