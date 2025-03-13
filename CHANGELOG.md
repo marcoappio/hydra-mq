@@ -1,3 +1,15 @@
+# v0.2.5 (Thu Mar 13 2025)
+
+#### 🐛 Bug Fix
+
+- [HYDR-9] Add LICENSE [#8](https://github.com/marcoappio/hydra-mq/pull/8) ([@isaachinman](https://github.com/isaachinman))
+
+#### Authors: 1
+
+- Isaac Hinman ([@isaachinman](https://github.com/isaachinman))
+
+---
+
 # v0.2.4 (Thu Mar 13 2025)
 
 #### 🐛 Bug Fix
