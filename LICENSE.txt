@@ -1,0 +1,81 @@
+# HYDRA-MQ SOURCE-AVAILABLE LICENSE
+
+## 1. DEFINITIONS
+
+"Software" refers to the Hydra-MQ software made available under this License.
+"License" refers to this Source-Available License Agreement.
+"Licensor" refers to the copyright holder of the Software.
+"Small-Scale Commercial Use" means commercial use by organizations with annual revenue under $1 million or deployments serving fewer than 10,000 monthly active users.
+"Large-Scale Commercial Use" means any commercial use that exceeds the thresholds defined for Small-Scale Commercial Use.
+"Contribution" means any work of authorship, including the original version of the Software and any modifications or additions to that Software, that is intentionally submitted to the Licensor for inclusion in the Software.
+"Contributor" means any person or entity that submits a Contribution.
+
+## 2. SOURCE CODE AVAILABILITY
+
+The Licensor provides access to the Software's source code for transparency, educational purposes, and limited usage as specified in this License. Access to source code does not grant rights beyond those explicitly stated in this License.
+
+## 3. PERMITTED USES
+
+3.1 The Software may be used for non-commercial purposes without restriction.
+
+3.2 The Software may be used for Small-Scale Commercial Use without requiring additional licensing.
+
+3.3 Contributors may submit issues and proposed changes to the Software, which if accepted, will be incorporated under the terms of this License.
+
+3.4 Users may modify the Software for personal, non-commercial use, provided that such modifications are not distributed to third parties.
+
+## 4. RESTRICTED USES
+
+4.1 Large-Scale Commercial Use requires a paid commercial license from the Licensor.
+
+4.2 Creation of derivative works, forks, or adaptations for any commercial purpose is expressly prohibited without explicit permission from the Licensor.
+
+4.3 Creation of derivative works, forks, or adaptations for non-commercial purposes that are publicly distributed is expressly prohibited without explicit permission from the Licensor.
+
+4.4 Use of the Software to develop competing products or services is prohibited.
+
+4.5 Redistribution of the Software, whether in original or modified form, is prohibited without explicit permission from the Licensor.
+
+## 5. INTELLECTUAL PROPERTY
+
+5.1 All intellectual property rights in the Software, including but not limited to copyright, patents, and trademarks, remain with the Licensor.
+
+5.2 By contributing to the Software, Contributors agree to assign all intellectual property rights in their Contributions to the Licensor.
+
+5.3 Contributors warrant that they have the legal right to grant the above assignment and that their Contributions do not violate any third-party rights.
+
+## 6. WARRANTY DISCLAIMER AND LIMITATION OF LIABILITY
+
+6.1 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+6.2 IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES OF ANY CHARACTER INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOST PROFITS, LOSS OF USE, LOSS OF DATA, OR ANY DAMAGES OR LOSSES WHATSOEVER, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE, EVEN IF THE LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+6.3 THE LICENSOR DOES NOT WARRANT THAT THE SOFTWARE WILL MEET USER REQUIREMENTS, OPERATE ERROR-FREE, OR WITHOUT INTERRUPTION. USER ASSUMES THE ENTIRE RISK OF USING THE SOFTWARE.
+
+## 7. TERMINATION
+
+7.1 This License is effective until terminated.
+
+7.2 The Licensor reserves the right to terminate this License immediately if User fails to comply with any term or condition of this License.
+
+7.3 Upon termination, User must cease all use of the Software and destroy all copies of the Software in User's possession or control.
+
+## 8. GOVERNING LAW AND JURISDICTION
+
+8.1 This License shall be governed by and construed in accordance with the laws of The United States of America, without regard to its conflict of law provisions.
+
+8.2 Any legal action or proceeding arising under this License will be brought exclusively in the courts located in The United States of America and the parties hereby consent to personal jurisdiction and venue therein.
+
+## 9. MISCELLANEOUS
+
+9.1 This License constitutes the entire agreement between the parties with respect to the use of the Software and supersedes all prior or contemporaneous understandings regarding such subject matter.
+
+9.2 If any provision of this License is held to be unenforceable, such provision shall be reformed only to the extent necessary to make it enforceable.
+
+9.3 No waiver of any provision or any breach of this License shall constitute a waiver of any other provision or any other breach.
+
+9.4 The Licensor may modify the terms of this License at any time by posting a revised version on the official Software repository or website. User's continued use of the Software after the posting of such changes shall constitute User's consent to such changes.
+
+## 10. CONTACT INFORMATION
+
+Questions about this License should be directed to team@marcoapp.io.
