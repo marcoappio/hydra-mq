@@ -47,5 +47,17 @@
     "pg": "8.13.3",
     "typedoc": "0.27.9",
     "typedoc-github-theme": "0.2.1"
-  }
+  },
+  "keywords": [
+    "Postgres",
+    "NodeJs",
+    "Typescript",
+    "Queue",
+    "RabbitMQ",
+    "BullMQ",
+    "Bull",
+    "Worker",
+    "Job",
+    "Job Queue"
+  ]
 }
