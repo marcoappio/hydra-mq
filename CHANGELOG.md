@@ -1,3 +1,15 @@
+# v0.2.4 (Thu Mar 13 2025)
+
+#### 🐛 Bug Fix
+
+- [HYDR-7] Update branding [#7](https://github.com/marcoappio/hydra-mq/pull/7) ([@isaachinman](https://github.com/isaachinman))
+
+#### Authors: 1
+
+- Isaac Hinman ([@isaachinman](https://github.com/isaachinman))
+
+---
+
 # v0.2.3 (Tue Mar 11 2025)
 
 #### 🐛 Bug Fix
