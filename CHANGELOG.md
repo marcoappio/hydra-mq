@@ -1,3 +1,15 @@
+# v0.2.8 (Fri Mar 14 2025)
+
+#### 🐛 Bug Fix
+
+- [HYDR-11] Fix CJS resolution [#10](https://github.com/marcoappio/hydra-mq/pull/10) ([@isaachinman](https://github.com/isaachinman))
+
+#### Authors: 1
+
+- Isaac Hinman ([@isaachinman](https://github.com/isaachinman))
+
+---
+
 # v0.2.6 (Thu Mar 13 2025)
 
 #### 🐛 Bug Fix
