@@ -82,7 +82,7 @@ export const functionMessageEnqueueCreateSql = (params: {
                 v_now,
                 v_now
             ) ON CONFLICT (queue_id, deduplication_id) 
-            WHERE status = ${sql.value(MessageStatus.WAITING)}
+            WHERE processed_at IS NULL
             DO UPDATE SET
                 payload = EXCLUDED.payload,
                 priority = EXCLUDED.priority,

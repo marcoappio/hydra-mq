@@ -72,11 +72,15 @@ test('messageEnqueue deduplication', async () => {
         payload: 'hello',
     })
 
-    await queueBeta.message.enqueue({
+    const firstBetaMessage = await queueBeta.message.enqueue({
         databaseClient: pool,
         deduplicationId: 'hello',
         payload: 'hello',
     })
+
+    numRows = await pool.query('SELECT COUNT(*)::INTEGER AS num_rows FROM test.message').then(res => res.rows[0]?.num_rows)
+    expect(numRows).toBe(2)
+    expect(firstBetaMessage.resultType).toBe('MESSAGE_ENQUEUED')
 
     const secondAlphaMessage = await queueAlpha.message.enqueue({
         databaseClient: pool,
@@ -85,36 +89,6 @@ test('messageEnqueue deduplication', async () => {
     })
 
     numRows = await pool.query('SELECT COUNT(*)::INTEGER AS num_rows FROM test.message').then(res => res.rows[0]?.num_rows)
-    expect(numRows).toBe(3)
-    expect(secondAlphaMessage.resultType).toBe('MESSAGE_ENQUEUED')
-
-    const secondBetaMessage = await queueBeta.message.enqueue({
-        databaseClient: pool,
-        deduplicationId: 'hello',
-        payload: 'goodbye',
-    })
-
-    numRows = await pool.query('SELECT COUNT(*)::INTEGER AS num_rows FROM test.message').then(res => res.rows[0]?.num_rows)
-    expect(numRows).toBe(4)
-    expect(secondBetaMessage.resultType).toBe('MESSAGE_ENQUEUED')
-
-    const thirdAlphaMessage = await queueAlpha.message.enqueue({
-        databaseClient: pool,
-        deduplicationId: 'hello',
-        payload: 'hello',
-    })
-
-    numRows = await pool.query('SELECT COUNT(*)::INTEGER AS num_rows FROM test.message').then(res => res.rows[0]?.num_rows)
-    expect(numRows).toBe(4)
-    expect(thirdAlphaMessage.resultType).toBe('MESSAGE_UPDATED')
-
-    const thirdBetaMessage = await queueBeta.message.enqueue({
-        databaseClient: pool,
-        deduplicationId: 'hello',
-        payload: 'hello',
-    })
-
-    numRows = await pool.query('SELECT COUNT(*)::INTEGER AS num_rows FROM test.message').then(res => res.rows[0]?.num_rows)
-    expect(numRows).toBe(4)
-    expect(thirdBetaMessage.resultType).toBe('MESSAGE_UPDATED')
+    expect(numRows).toBe(2)
+    expect(secondAlphaMessage.resultType).toBe('MESSAGE_UPDATED')
 })
