@@ -1,3 +1,15 @@
+# v0.2.10 (Mon Mar 17 2025)
+
+#### 🐛 Bug Fix
+
+- Change README.md [#12](https://github.com/marcoappio/hydra-mq/pull/12) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.2.9 (Mon Mar 17 2025)
 
 #### 🐛 Bug Fix
