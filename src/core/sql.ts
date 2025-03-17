@@ -1,6 +1,7 @@
 type ValueType =
     | number
     | string
+    | boolean
     | null
 
 export type SqlValueNode = {
@@ -36,6 +37,10 @@ const escapeValue = (val: ValueType): string => {
 
     if (typeof val === 'number') {
         return val.toString()
+    }
+
+    if (typeof val === 'boolean') {
+        return val ? 'TRUE' : 'FALSE'
     }
 
     const escapedStr = val.replace(/'/g, '\'\'')

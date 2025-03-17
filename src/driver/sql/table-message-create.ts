@@ -29,7 +29,7 @@ export const tableMessageCreateSql = (params: {
         ON ${params.schema}.message (
             queue_id,
             deduplication_id
-        ) WHERE status = ${sql.value(MessageStatus.WAITING)};
+        ) WHERE processed_at IS NULL;
     `,
 
     sql.build `
