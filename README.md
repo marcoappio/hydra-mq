@@ -16,8 +16,6 @@ Documentation is available at [hydra-mq.marcoapp.io](https://hydra-mq.marcoapp.i
 
 A high performance Postgres message queue implementation for NodeJs/TypeScript.
 
-<br />
-
 ## Features
 
   - Zero dependencies.
@@ -30,8 +28,6 @@ A high performance Postgres message queue implementation for NodeJs/TypeScript.
   - Configurable message retry settings.
   - DB client agnostic.
   - High throughput: > 10,000 jobs per second.
-
-<br />
 
 ## Quick Look
 
@@ -60,8 +56,6 @@ deployment.daemon.processor({ processFn, databaseClient: pool })
 deployment.daemon.orchestrator({ databaseClient: pool })
 ```
 
-<br />
-
 ## Setup & Installation
 
 HydraMQ can be installed from npm via:
@@ -83,8 +77,6 @@ const sqlCommands: string[] = deployment.installation()
 ```
 
 N.B. the set of SQL commands generated is **not** idempotent and thus it is strongly recommended that they are executed within a transaction.
-
-<br />
 
 ## Basic Usage
 
@@ -113,13 +105,30 @@ It is important to spawn _at least_ one orchestrator daemon. The orchestrator is
 const orchestrator = deployment.daemon.orchestrator({ databaseClient: pool })
 ```
 
-<br />
+## Message Lifecycle
+
+Before we proceed, it would be salient to understand the lifecycle of messages that are submitted into HydraMQ queues.
+
+Messages can exist in the following states:
+
+  - `READY` - The message is available to be processed.
+  - `WAITING` - Due to queue concurrency limits, the message is not yet available for processing.
+  - `PROCESSING` - The message is currently being processed.
+  - `LOCKED` - The message is in a temporarily locked state (due to a processing failure) and won't be re-processed for some time.
+
+When a message is enqueued, it will begin its life in the `WAITING` state if its target queue doesn't have sufficient concurrency to process it right away, else it will be in the `READY` state.
+
+Processors will take jobs in the `READY` state and move them to the `PROCESSING` state for the duration that they are processed. 
+
+After processing, the message will either be deleted if processed successfully or if it has failed and has no retry attempts left. If processing fails but there are retry attempts left, it will transition into the `LOCKED` state.
+
+Messages in the `LOCKED` state will eventually be transitioned back to either `WAITING` or `READY` by the orchestrator, again depending on the concurrency limits of its queue.
 
 ## Processor Concurrency
 
-Processor daemons will poll for messages - processing them when available. If no messages are available it will "timeout" for some period of time before polling again.
+Processors will poll for messages - processing them when available. If no messages are available it will "timeout" for some period of time before polling again.
 
-By default, the processor daemon will process one message at a time. However, if we set the `executionConcurrency` of the processor, it will dispatch dequeued messages to a fleet of executors that can process messages concurrent with one another:
+By default, the processor will process one message at a time. However, if we set the `executionConcurrency` of the processor, it will dispatch dequeued messages to a fleet of executors that can process messages concurrent with one another:
 
 ```typescript
 const processor = deployment.daemon.processor({ 
@@ -129,7 +138,9 @@ const processor = deployment.daemon.processor({
 })
 ```
 
-This setting is useful when dealing with long running, IO-bound jobs. However, we will run into throughput limitations with short-lived jobs as even though there are multiple executors, the processor will still dequeue messages sequentially. In this scenario, it is recommended to deploy _multiple_ processors - with each processor dequeuing messages concurrently affording a much greater message throughput:
+This setting is useful when dealing with long running, IO-bound jobs. However, we will run into throughput limitations with short-lived jobs as even though there are multiple executors, the processor will still dequeue messages sequentially. 
+
+In this pathological scenario, it is recommended to deploy _multiple_ processors - with each processor dequeuing messages concurrently and thus affording a much greater message throughput:
 
 ```typescript
 const processors = [
@@ -154,8 +165,6 @@ const processors = [
 Finally, it is worth noting that HydraMQ daemons all run on a single thread. This is no problem for IO-bound work, however anything CPU intensive will cause significant performance issues. HydraMQ processors must be spread across multiple processes/servers to leverage additional CPU cores to mitigate this issue.
 
 Unlike other queuing solutions, there is no need to ensure the orchestrator daemon remains a singleton. Multiple orchestrators spanning multiple processes will behave well with one another – thus simply naively replicating your HydraMQ worker process is perfectly sensible vs. having to separate the orchestrator into its own dedicated singleton process.
-
-<br />
 
 ## Multiple Queues
 
@@ -184,11 +193,13 @@ In the example above, we show a pattern by which certain workloads can be priori
 
 N.B. queue names must be dot-separated (i.e. `foo.bar.baz`). Prefix matching will only work at dot boundaries and not within the individual name segments (e.g. `foo.bar` will match with `foo.bar.baz`, but `foo.ba` will not).
 
-<br />
-
 ## Queue Configuration
 
-Queues can be configured to constrain maximum concurrency. Queues with a specified maximum concurrency will only allow a certain number of messages to be processed simultaneously across all processors (N.B. this concurrency limit is truly global and thus will work across distinct daemons/processes/servers). Queues can also be configured to constrain their total capacity. Queues with a specified maximum capacity will prevent further messages from being enqueued should their limit be reached. 
+Queues can be configured to constrain maximum concurrency and capacity. 
+
+Queues with a specified maximum concurrency will only allow a certain number of messages to be processed simultaneously across all processors (N.B. this concurrency limit is truly global and thus will work across distinct daemons/processes/servers). 
+
+Queues can also be configured to constrain their total capacity. Queues with a specified maximum capacity will prevent further messages from being enqueued should their limit be reached. 
 
 We can set and clear queue configuration via:
 
@@ -207,11 +218,9 @@ await queue.config.clear({
 
 N.B. changes to concurrency don't propagate instantly and messages currently being procesed will certainly never be "evicted" in response to concurrency changes.
 
-<br />
-
 ## Prioritized Messages
 
-Messages can be prioritized - ensuring they are processed faster than others by setting the `priority` argument when enqueuing a message. All messages with specified priorities are processed _before_ those without any specific priority:
+Messages can be prioritized - ensuring they are processed faster than others, by setting the `priority` argument when enqueuing a message. All messages with specified priorities are processed _before_ those without an explicit priority:
 
 ```typescript
 await queue.message.enqueue({
@@ -220,8 +229,6 @@ await queue.message.enqueue({
   priority: 10,
 })
 ```
-
-<br />
 
 ## Retryable Messages
 
@@ -236,11 +243,13 @@ await queue.message.enqueue({
 })
 ```
 
-<br />
+## De-duplicated Messages
+
+Messages can be de-duplicated by specifying a `deduplicationId` argument when enqueued. If a message with a matching `deduplicationId`, that is yet to be processed exists on the same queue, then said message will be _updated_ vs. a new message being enqueued.
 
 ## Scheduled Messages
 
-Each queue can also have scheduled messages that enqueue repeatedly at fixed intervals. Scheduled messages can be set and cleared using the same arguments as we'd expect to see when enqueuing a message. An additional required argument is `repeatSecs` which describes how often the message should be scheduled:
+Each queue can also have scheduled messages that enqueue repeatedly at fixed intervals. Scheduled messages can be set and cleared using the same arguments as we'd expect to see when enqueuing a message. An additional required argument is `cronExpr` which describes how often the message should be scheduled, using normal cron job syntax:
 
 ```typescript
 await queue
@@ -251,7 +260,7 @@ await queue
     numAttempts: 5,
     priority: 10,
     timeoutSecs: 60 * 5,
-    repeatSecs: 10,
+    cronExpr: "0 * * * *"
   })
 
 await queue
@@ -260,8 +269,6 @@ await queue
     databaseClient: pool,
   })
 ```
-
-<br />
 
 ## Graceful Shutdown & Cleaning
 
@@ -272,8 +279,6 @@ Failure to gracefully shut down daemons (particularly processors) may result in 
 That being said, hard crashes are a fact of life and ultimately can't be avoided. As such, we must be able to recover from theser situations. To that end, the orchestrator regularly performs a "clean" operation that sweeps these "stuck" jobs. It does this by considering all jobs that have been processing for longer than a specified `staleSecs` (set when a message is enqueued) as "stuck".
 
 N.B. Make sure to set `staleSecs` such that it is larger than the expected amount of time required to process a job as otherwise the orchestrator is liable to "clean" it even if not stuck. By default this is set to 1 hour.
-
-<br />
 
 ## Other Database Clients
 
@@ -292,8 +297,6 @@ export class MyDatabaseClient implements DatabaseClient {
   }
 }
 ```
-
-<br />
 
 ## Events 
 
@@ -316,24 +319,6 @@ deployment.daemon.addEventHandler(event => {
   console.log(event.eventType)
 })
 ```
-
-<br />
-
-## Message Lifecycle
-
-When a message is enqueued, it will start in the `READY` state if the queue has sufficient open concurrency slots. If this is not the case, messages will begin in a `WAITING` state.
-
-Processors will grab messages in the `READY` state for processing. They do this in order of priority and then creation time. Once a message has been "dequeued" by a processor it transitions into the `PROCESSING` state. 
-
-If processing completes successfully or fails with no retries remaining, the message is deleted. The queue from which the message originated will then be explicitly "advanced" - this involves potentially bringing a message in the `WAITING` state into the `READY` state, should the concurrency constraints of the queue allow (again in order of priority and creation time).
-
-If processing fails with retries remaining, instead of being deleted, it will be transitioned into a `LOCKED` state. As above, the queue is again "advanced", potentially pulling another message into the `READY` state should it be allowed. 
-
-Similar to how message enqueuing works, the orchestrator will transition locked messages into either the `WAITING` or `READY` state when they are ready for attempted re-processing.
-
-Messages that have been stuck in the `PROCESSING` state for too long, will either be deleted or transitioned into a `LOCKED` state by the orchestrator for re-processing.
-
-<br />
 
 ## Polling & Responsiveness
 
