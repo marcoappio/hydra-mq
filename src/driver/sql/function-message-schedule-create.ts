@@ -1,20 +1,21 @@
-import { SCHEDULE_SLIPPAGE_MINS as SCHEDULE_SLIPPAGE_THRESHOLD_MINS } from '@src/core/config'
-import { type SqlRefNode, sql } from '@src/core/sql'
-import { ResultCode } from '@src/driver/result-code'
+import { SCHEDULE_SLIPPAGE_MINS as SCHEDULE_SLIPPAGE_THRESHOLD_MINS } from "@src/core/config"
+import { type SqlRefNode, sql, valueNode } from "@src/core/sql"
+import { ResultCode } from "@src/driver/result-code"
 
 export const functionMessageScheduleCreateSql = (params: {
     schema: SqlRefNode
 }) => [
-    sql.build `
+    sql `
         CREATE FUNCTION ${params.schema}.message_schedule()
         RETURNS TABLE (
             o_result_code INTEGER,
-            o_schedule_id TEXT,
             o_message_id UUID,
-            o_queue_id TEXT
+            o_group_id TEXT,
+            o_queue_id TEXT,
+            o_schedule_id TEXT
         ) AS $$
         DECLARE
-            v_slippage_mins INTEGER := ${sql.value(SCHEDULE_SLIPPAGE_THRESHOLD_MINS)};
+            v_slippage_mins INTEGER := ${valueNode(SCHEDULE_SLIPPAGE_THRESHOLD_MINS)};
             v_now_mins INTEGER := EXTRACT(EPOCH FROM NOW()) / 60;
             v_cron_last_mins INTEGER;
             v_cron_timestamp TIMESTAMP;
@@ -30,9 +31,10 @@ export const functionMessageScheduleCreateSql = (params: {
             v_enqueue RECORD;
         BEGIN
             SELECT 
-                id, 
+                group_id,
                 queue_id, 
-                payload, 
+                schedule_id, 
+                payload,
                 priority, 
                 timeout_secs, 
                 stale_secs,
@@ -55,10 +57,11 @@ export const functionMessageScheduleCreateSql = (params: {
 
             IF v_schedule IS NULL THEN
                 RETURN QUERY SELECT
-                    ${sql.value(ResultCode.SCHEDULE_NOT_AVAILABLE)}, 
-                    ${sql.value(null)}::TEXT, 
-                    ${sql.value(null)}::UUID, 
-                    ${sql.value(null)}::TEXT;
+                    ${valueNode(ResultCode.SCHEDULE_NOT_AVAILABLE)}, 
+                    ${valueNode(null)}::UUID, 
+                    ${valueNode(null)}::TEXT, 
+                    ${valueNode(null)}::TEXT, 
+                    ${valueNode(null)}::TEXT;
                 RETURN;
             END IF;
 
@@ -85,14 +88,17 @@ export const functionMessageScheduleCreateSql = (params: {
 
             UPDATE ${params.schema}.schedule SET
             cron_last_mins = v_now_mins
-            WHERE id = v_schedule.id;
+            WHERE group_id = v_schedule.group_id
+            AND queue_id = v_schedule.queue_id
+            AND schedule_id = v_schedule.schedule_id;
 
             IF NOT v_should_enqueue THEN
                 RETURN QUERY SELECT
-                    ${sql.value(ResultCode.SCHEDULE_EXHAUSTED)}, 
-                    v_schedule.id, 
-                    ${sql.value(null)}::UUID, 
-                    v_schedule.queue_id;
+                    ${valueNode(ResultCode.SCHEDULE_EXHAUSTED)}, 
+                    ${valueNode(null)}::UUID, 
+                    v_schedule.group_id, 
+                    v_schedule.queue_id,
+                    v_schedule.schedule_id;
                 RETURN;
             END IF;
 
@@ -101,6 +107,7 @@ export const functionMessageScheduleCreateSql = (params: {
                 message_enqueue.o_message_id
             INTO v_enqueue
             FROM ${params.schema}.message_enqueue(
+                v_schedule.group_id,
                 v_schedule.queue_id,
                 v_schedule.payload,
                 v_schedule.priority,
@@ -110,24 +117,27 @@ export const functionMessageScheduleCreateSql = (params: {
                 v_schedule.deduplication_id
             );
 
-            IF v_enqueue.o_result_code = ${sql.value(ResultCode.MESSAGE_ENQUEUED)} THEN
+            IF v_enqueue.o_result_code = ${valueNode(ResultCode.MESSAGE_ENQUEUED)} THEN
                 RETURN QUERY SELECT 
-                    ${sql.value(ResultCode.MESSAGE_ENQUEUED)}, 
-                    v_schedule.id, 
+                    ${valueNode(ResultCode.MESSAGE_ENQUEUED)}, 
                     v_enqueue.o_message_id, 
-                    v_schedule.queue_id;
-            ELSIF v_enqueue.o_result_code = ${sql.value(ResultCode.MESSAGE_UPDATED)} THEN
+                    v_schedule.group_id,
+                    v_schedule.queue_id,
+                    v_schedule.schedule_id;
+            ELSIF v_enqueue.o_result_code = ${valueNode(ResultCode.MESSAGE_UPDATED)} THEN
                 RETURN QUERY SELECT 
-                    ${sql.value(ResultCode.MESSAGE_UPDATED)}, 
-                    v_schedule.id, 
+                    ${valueNode(ResultCode.MESSAGE_UPDATED)}, 
                     v_enqueue.o_message_id, 
-                    v_schedule.queue_id;
+                    v_schedule.group_id,
+                    v_schedule.queue_id,
+                    v_schedule.schedule_id;
             ELSE
                 RETURN QUERY SELECT 
-                    ${sql.value(ResultCode.QUEUE_CAPACITY_EXCEEDED)},
-                    v_schedule.id, 
-                    ${sql.value(null)}::UUID, 
-                    v_schedule.queue_id;
+                    ${valueNode(ResultCode.QUEUE_CAPACITY_EXCEEDED)},
+                    ${valueNode(null)}::UUID, 
+                    v_schedule.group_id,
+                    v_schedule.queue_id,
+                    v_schedule.schedule_id;
             END IF;
         END;
         $$ LANGUAGE plpgsql;

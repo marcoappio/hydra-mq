@@ -27,24 +27,19 @@
   "scripts": {
     "build": "bun run script/build.ts",
     "generate-docs": "bun typedoc src/index.ts --plugin typedoc-github-theme",
-    "lint": "eslint --ext .ts,.tsx,.js src",
+    "lint": "eslint src",
     "release": "bun run build && auto shipit",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@auto-it/npm": "11.3.0",
+    "@stylistic/eslint-plugin-ts": "4.2.0",
     "@types/bun": "1.2.0",
     "@types/pg": "8.11.11",
-    "@typescript-eslint/eslint-plugin": "5.62.0",
-    "@typescript-eslint/parser": "6.21.0",
+    "@typescript-eslint/eslint-plugin": "8.26.1",
+    "@typescript-eslint/parser": "8.26.1",
     "auto": "11.3.0",
     "bun-plugin-dts": "0.3.0",
-    "eslint": "8.41.0",
-    "eslint-plugin-import": "2.31.0",
-    "eslint-plugin-prefer-arrow": "1.2.3",
-    "eslint-plugin-sort-destructure-keys": "1.4.0",
-    "eslint-plugin-sort-keys-fix": "1.1.2",
-    "eslint-plugin-typescript-sort-keys": "2.3.0",
     "pg": "8.13.3",
     "typedoc": "0.27.9",
     "typedoc-github-theme": "0.2.1"
@@ -60,5 +55,8 @@
     "Worker",
     "Job",
     "Job Queue"
-  ]
+  ],
+  "dependencies": {
+    "eslint": "9.22.0"
+  }
 }

@@ -1,12 +1,13 @@
-import { type SqlRefNode, sql } from '@src/core/sql'
-import { MessageStatus } from '@src/driver/message-status'
-import { ResultCode } from '@src/driver/result-code'
+import { type SqlRefNode, sql, valueNode } from "@src/core/sql"
+import { MessageStatus } from "@src/driver/message-status"
+import { ResultCode } from "@src/driver/result-code"
 
 export const functionMessageEnqueueCreateSql = (params: {
     schema: SqlRefNode
 }) => [
-    sql.build`
+    sql `
         CREATE FUNCTION ${params.schema}.message_enqueue(
+            p_group_id TEXT,
             p_queue_id TEXT,
             p_payload TEXT,
             p_priority INTEGER,
@@ -22,7 +23,7 @@ export const functionMessageEnqueueCreateSql = (params: {
         DECLARE
             v_now TIMESTAMP := NOW();
             v_status INTEGER;
-            v_chunks TEXT[];
+            v_result_code INTEGER;
             v_message_id UUID := GEN_RANDOM_UUID();
             v_message RECORD;
             v_queue_config RECORD;
@@ -34,31 +35,35 @@ export const functionMessageEnqueueCreateSql = (params: {
                 max_concurrency
             INTO v_queue_config
             FROM ${params.schema}.queue_config
-            WHERE id = p_queue_id
+            WHERE group_id = p_group_id
+            AND queue_id = p_queue_id
             FOR UPDATE;
 
             IF v_queue_config.current_capacity >= v_queue_config.max_capacity THEN
                 RETURN QUERY SELECT 
-                    ${sql.value(ResultCode.QUEUE_CAPACITY_EXCEEDED)}, 
-                    ${sql.value(null)}::UUID;
+                    ${valueNode(ResultCode.QUEUE_CAPACITY_EXCEEDED)}, 
+                    ${valueNode(null)}::UUID;
                 RETURN;
             END IF;
 
             IF v_queue_config.max_concurrency IS NULL OR v_queue_config.current_concurrency < v_queue_config.max_concurrency THEN
-                v_status := ${sql.value(MessageStatus.READY)};
+                v_status := ${valueNode(MessageStatus.READY)};
                 UPDATE ${params.schema}.queue_config SET
                     current_capacity = current_capacity + 1,
                     current_concurrency = current_concurrency + 1
-                WHERE id = p_queue_id;
+                WHERE group_id = p_group_id
+                AND queue_id = p_queue_id;
             ELSE
-                v_status := ${sql.value(MessageStatus.WAITING)};
+                v_status := ${valueNode(MessageStatus.WAITING)};
                 UPDATE ${params.schema}.queue_config SET
                     current_capacity = current_capacity + 1
-                WHERE id = p_queue_id;
+                WHERE group_id = p_group_id
+                AND queue_id = p_queue_id;
             END IF;
 
             INSERT INTO ${params.schema}.message (
                 id,
+                group_id,
                 queue_id,
                 payload,
                 priority,
@@ -71,6 +76,7 @@ export const functionMessageEnqueueCreateSql = (params: {
                 updated_at
             ) VALUES (
                 v_message_id,
+                p_group_id,
                 p_queue_id,
                 p_payload,
                 p_priority,
@@ -81,7 +87,7 @@ export const functionMessageEnqueueCreateSql = (params: {
                 v_status,
                 v_now,
                 v_now
-            ) ON CONFLICT (queue_id, deduplication_id) 
+            ) ON CONFLICT (group_id, queue_id, deduplication_id) 
             WHERE processed_at IS NULL
             DO UPDATE SET
                 payload = EXCLUDED.payload,
@@ -94,33 +100,14 @@ export const functionMessageEnqueueCreateSql = (params: {
             INTO v_message;
 
             IF v_message.id != v_message_id THEN
-                RETURN QUERY SELECT 
-                    ${sql.value(ResultCode.MESSAGE_UPDATED)}, 
-                    v_message.id;
-                RETURN;
+                v_result_code := ${valueNode(ResultCode.MESSAGE_UPDATED)};
+            ELSE
+                v_result_code := ${valueNode(ResultCode.MESSAGE_ENQUEUED)};
             END IF;
 
-            v_chunks := ${params.schema}.prefixes_generate(p_queue_id);
-
-            FOR i IN 1..array_length(v_chunks, 1) LOOP
-                INSERT INTO ${params.schema}.message_queue_prefix (
-                    message_id,
-                    queue_id_prefix,
-                    status,
-                    priority,
-                    created_at
-                ) VALUES (
-                    v_message_id,
-                    v_chunks[i],
-                    v_status,
-                    p_priority,
-                    v_now
-                );
-            END LOOP;
-
             RETURN QUERY SELECT 
-                ${sql.value(ResultCode.MESSAGE_ENQUEUED)}, 
-                v_message_id;
+                v_result_code,
+                v_message.id;
         END;
         $$ LANGUAGE plpgsql;
     `,

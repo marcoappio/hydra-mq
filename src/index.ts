@@ -1,20 +1,20 @@
-export { Deployment } from './deployment'
-export type { DatabaseClient } from './core/database-client'
-export type { DeploymentDaemonNamespace } from './deployment/daemon'
-export type { Queue } from './deployment/queue'
-export type { QueueConfigNamespace } from './deployment/queue/config'
-export type { QueueMessageNamespace, EnqueueResult } from './deployment/queue/message'
-export type { DaemonOrchestrator } from './deployment/daemon/orchestrator'
-export type { DaemonProcessor, ProcessFn } from './deployment/daemon/processor'
-export type { Schedule } from './deployment/queue/schedule'
-export type {
+export { Deployment } from "./deployment"
+export type { Group } from "./deployment/group"
+export type { Queue } from "./deployment/group/queue"
+export type { QueueConfigModule } from "./deployment/group/queue/config"
+export type { Schedule } from "./deployment/group/queue/schedule"
+export type { DaemonOrchestrator } from "./deployment/orchestrator"
+export type { DaemonProcessor } from "./deployment/group/processor"
+export type { ProcessorFn } from "./deployment/group/processor/process-fn"
+export type { DatabaseClient } from "./core/database-client"
+export type { 
+    HydraEvent, 
     HydraEventHandler,
-    HydraEvent,
-    HydraEventMessageCleaned,
     HydraEventMessageDequeued,
+    HydraEventMessageProcessed,
     HydraEventMessageExpired,
     HydraEventMessageLocked,
-    HydraEventMessageProcessed,
+    HydraEventMessageCleaned,
     HydraEventMessageScheduled,
     HydraEventMessageUnlocked,
-} from './deployment/event'
+} from "./deployment/event"

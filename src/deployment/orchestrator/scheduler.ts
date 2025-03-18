@@ -1,12 +1,12 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { EggTimer } from '@src/core/egg-timer'
-import { Semaphore } from '@src/core/semaphore'
-import type { HydraEventHandler } from '@src/deployment/event'
-import { messageSchedule } from '@src/driver/message-schedule'
+import type { DatabaseClient } from "@src/core/database-client"
+import { EggTimer } from "@src/core/egg-timer"
+import { Semaphore } from "@src/core/semaphore"
+import type { HydraEventHandler } from "@src/deployment/event"
+import { messageSchedule } from "@src/driver/message-schedule"
 
 export class DaemonScheduler {
 
-    private readonly eventHandler: HydraEventHandler
+    private readonly eventHandler: HydraEventHandler | null
     private readonly databaseClient: DatabaseClient
     private readonly schema: string
     private readonly timeoutSecs: number
@@ -20,7 +20,7 @@ export class DaemonScheduler {
     constructor(params: {
         daemonId: string | null
         databaseClient: DatabaseClient
-        eventHandler: HydraEventHandler
+        eventHandler: HydraEventHandler | null
         schema: string
         timeoutSecs: number
 
@@ -43,13 +43,14 @@ export class DaemonScheduler {
                 schema: this.schema,
             })
 
-            if (result.resultType === 'SCHEDULE_NOT_AVAILABLE') {
+            if (result.resultType === "SCHEDULE_NOT_AVAILABLE") {
                 this.eggTimer.set(this.timeoutSecs * 1000)
                 await this.semaphore.acquire()
-            } else if (result.resultType === 'MESSAGE_ENQUEUED') {
+            } else if (result.resultType === "MESSAGE_ENQUEUED" && this.eventHandler) {
                 this.eventHandler({
                     daemonId: this.daemonId,
-                    eventType: 'MESSAGE_SCHEDULED',
+                    groupId: result.groupId,
+                    eventType: "MESSAGE_SCHEDULED",
                     messageId: result.messageId,
                     queueId: result.queueId,
                     scheduleId: result.scheduleId,
