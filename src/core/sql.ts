@@ -24,7 +24,7 @@ export type SqlRawNode = {
     value: string
 }
 
-type SqlNode =
+export type SqlNode =
     | SqlValueNode
     | SqlArrayNode
     | SqlRefNode
@@ -47,43 +47,52 @@ const escapeValue = (val: ValueType): string => {
     return `'${escapedStr}'`
 }
 
-const escapeRef = (ident: string): string => {
-    const escapedRef = ident.replace(/"/g, "\"\"")
+export const valueNode = (val: ValueType): SqlValueNode => ({ type: "VALUE", value: val })
+
+export const refNode = (ident: string): SqlRefNode => ({ type: "REF", value: ident })
+
+export const arrayNode = (arr: ValueType[]): SqlArrayNode => ({ type: "ARRAY", value: arr })
+
+export const rawNode = (val: string): SqlRawNode => ({ type: "RAW", value: val })
+
+export const escapeValueNode = (node: SqlValueNode): string => {
+    return escapeValue(node.value)
+}
+
+export const escapeRefNode = (node: SqlRefNode): string => {
+    const escapedRef = node.value.replace(/"/g, "\"\"")
     return `"${escapedRef}"`
 }
 
-const escapeArray = (arr: ValueType[]): string => `ARRAY[${arr.map(escapeValue).join(", ")}]`
+export const escapeArrayNode = (node: SqlArrayNode): string => {
+    const elements = node.value.map(escapeValue).join(", ")
+    return `ARRAY[${elements}]`
+}
 
-const value = (val: ValueType): SqlValueNode => ({ type: "VALUE", value: val })
+export const escapeRawNode = (node: SqlRawNode): string => {
+    return node.value
+}
 
-const ref = (ident: string): SqlRefNode => ({ type: "REF", value: ident })
-
-const array = (arr: ValueType[]): SqlArrayNode => ({ type: "ARRAY", value: arr })
-
-const raw = (val: string): SqlRawNode => ({ type: "RAW", value: val })
-
-const build = (fragments: TemplateStringsArray, ...nodes: SqlNode[]): string => {
+export const sql = (fragments: TemplateStringsArray, ...nodes: SqlNode[]): string => {
     const zipped: string[] = []
-    for (let ix = 0; ix < fragments.length; ix++) {
+    for (let ix = 0; ix < fragments.length; ix += 1) {
         zipped.push(fragments[ix])
+
         if (ix < nodes.length) {
             const node = nodes[ix]
-            switch (node.type) {
-            case "VALUE": zipped.push(escapeValue(node.value)); break
-            case "REF": zipped.push(escapeRef(node.value)); break
-            case "ARRAY": zipped.push(escapeArray(node.value)); break
-            case "RAW": zipped.push(node.value); break
+            if(node.type === "VALUE") {
+                zipped.push(escapeValueNode(node))
+            } else if(node.type === "REF") {
+                zipped.push(escapeRefNode(node))
+            } else if(node.type === "ARRAY") {
+                zipped.push(escapeArrayNode(node))
+            } else if(node.type === "RAW") {
+                zipped.push(escapeRawNode(node))
+            } else {
+                throw new Error("Unknown node type")
             }
         }
     }
-    return zipped.join("")
-}
 
-// Bundle public API
-export const sql = {
-    array,
-    build,
-    raw,
-    ref,
-    value,
+    return zipped.join("")
 }

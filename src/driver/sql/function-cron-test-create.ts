@@ -1,9 +1,9 @@
-import { type SqlRefNode, sql } from "@src/core/sql"
+import { sql, type SqlRefNode } from "@src/core/sql"
 
 export const functionCronTestCreate = (params: {
     schema: SqlRefNode
 }) => [
-    sql.build `
+    sql `
         CREATE FUNCTION ${params.schema}.cron_test(
             p_cron_expr_mins INTEGER[],
             p_cron_expr_hours INTEGER[],

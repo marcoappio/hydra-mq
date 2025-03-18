@@ -1,25 +1,34 @@
 import { MESSAGE_NUM_ATTEMPTS, MESSAGE_PRIORITY, MESSAGE_STALE_SECS, MESSAGE_TIMEOUT_SECS } from "@src/core/config"
 import type { DatabaseClient } from "@src/core/database-client"
-import { scheduleClear } from "@src/driver/schedule-clear"
-import { scheduleSet } from "@src/driver/schedule-set"
+import { QueueConfigModule } from "@src/deployment/group/queue/config"
+import { Schedule } from "@src/deployment/group/queue/schedule"
+import { messageEnqueue } from "@src/driver/message-enqueue"
+import type { DriverResult as EnqueueResult } from "@src/driver/message-enqueue"
 
-export class Schedule {
+export class Queue {
+
     private readonly schema: string
     private readonly queueId: string
-    private readonly scheduleId: string
+    private readonly groupId: string
+    readonly config: QueueConfigModule
 
     constructor(params: {
         queueId: string
-        scheduleId: string
+        groupId: string
         schema: string
     }) {
         this.schema = params.schema
         this.queueId = params.queueId
-        this.scheduleId = params.scheduleId
+        this.groupId = params.groupId
+
+        this.config = new QueueConfigModule({
+            queueId: this.queueId,
+            groupId: this.groupId,
+            schema: this.schema,
+        })
     }
 
-    async set(params: {
-        cronExpr: string
+    async enqueue(params: {
         databaseClient: DatabaseClient
         deduplicationId?: string
         numAttempts?: number
@@ -27,29 +36,26 @@ export class Schedule {
         priority?: number
         staleSecs?: number
         timeoutSecs?: number
-    }) {
-        return scheduleSet({
-            cronExpr: params.cronExpr,
+    }): Promise<EnqueueResult> {
+        return messageEnqueue({
             databaseClient: params.databaseClient,
             deduplicationId: params.deduplicationId ?? null,
             numAttempts: params.numAttempts ?? MESSAGE_NUM_ATTEMPTS,
             payload: params.payload,
             priority: params.priority ?? MESSAGE_PRIORITY,
             queueId: this.queueId,
-            scheduleId: this.scheduleId,
+            groupId: this.groupId,
             schema: this.schema,
             staleSecs: params.staleSecs ?? MESSAGE_STALE_SECS,
             timeoutSecs: params.timeoutSecs ?? MESSAGE_TIMEOUT_SECS,
         })
     }
 
-    async clear(params: {
-        databaseClient: DatabaseClient
-    }) {
-        return scheduleClear({
-            databaseClient: params.databaseClient,
+    schedule(scheduleId: string) {
+        return new Schedule({
             queueId: this.queueId,
-            scheduleId: this.scheduleId,
+            scheduleId: scheduleId,
+            groupId: this.groupId,
             schema: this.schema,
         })
     }

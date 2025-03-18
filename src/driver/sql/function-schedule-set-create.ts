@@ -3,10 +3,11 @@ import { type SqlRefNode, sql } from "@src/core/sql"
 export const functionScheduleSetCreateSql = (params: {
     schema: SqlRefNode
 }) => [
-    sql.build `
+    sql `
         CREATE FUNCTION ${params.schema}.schedule_set(
-            p_schedule_id TEXT,
+            p_group_id TEXT,
             p_queue_id TEXT,
+            p_schedule_id TEXT,
             p_payload TEXT,
             p_priority INTEGER,
             p_timeout_secs INTEGER,
@@ -24,8 +25,9 @@ export const functionScheduleSetCreateSql = (params: {
             v_now TIMESTAMP := NOW();
         BEGIN
             INSERT INTO ${params.schema}.schedule (
-                id,
+                group_id,
                 queue_id,
+                schedule_id,
                 payload,
                 priority,
                 timeout_secs,
@@ -41,8 +43,9 @@ export const functionScheduleSetCreateSql = (params: {
                 created_at,
                 updated_at
             ) VALUES (
-                p_schedule_id,
+                p_group_id,
                 p_queue_id,
+                p_schedule_id,
                 p_payload,
                 p_priority,
                 p_timeout_secs,
@@ -57,7 +60,7 @@ export const functionScheduleSetCreateSql = (params: {
                 p_cron_expr_days_of_week,
                 v_now,
                 v_now
-            ) ON CONFLICT (id, queue_id) DO UPDATE SET
+            ) ON CONFLICT (group_id, queue_id, schedule_id) DO UPDATE SET
                 payload = p_payload,
                 priority = p_priority,
                 timeout_secs = p_timeout_secs,

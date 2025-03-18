@@ -1,14 +1,8 @@
 import type { DatabaseClient } from "@src/core/database-client"
-import { DaemonProcessorDequeueModule } from "@src/deployment/daemon/processor/dequeue"
-import type { DaemonProcessorDirectory } from "@src/deployment/daemon/processor/directory"
-import { DaemonProcessorExecutionModule } from "@src/deployment/daemon/processor/execution"
 import type { HydraEventHandler } from "@src/deployment/event"
-
-export type ProcessFn = (payload: string, metadata: {
-    markAsFailed: () => void
-    messageId: string
-    queueId: string
-}) => Promise<void>
+import { DaemonProcessorDequeueModule } from "@src/deployment/group/processor/dequeue"
+import { DaemonProcessorExecutionModule } from "@src/deployment/group/processor/execution"
+import type { ProcessorFn } from "@src/deployment/group/processor/process-fn"
 
 export class DaemonProcessor {
 
@@ -17,10 +11,11 @@ export class DaemonProcessor {
 
     constructor(params: {
         daemonId: string | null
+        groupId: string
         databaseClient: DatabaseClient
-        eventHandler: HydraEventHandler
+        eventHandler: HydraEventHandler | null
         executionConcurrency: number
-        processFn: ProcessFn
+        processorFn: ProcessorFn
         queuePrefix: string
         schema: string
         timeoutSecs: number
@@ -28,23 +23,21 @@ export class DaemonProcessor {
     }) {
         this.dequeueModule = new DaemonProcessorDequeueModule({
             databaseClient: params.databaseClient,
-            queuePrefix: params.queuePrefix,
+            eventHandler: params.eventHandler,
+            groupId: params.groupId,
+            daemonId: params.daemonId,
             schema: params.schema,
             timeoutSecs: params.timeoutSecs,
         })
-
-        const directory: DaemonProcessorDirectory = {
-            getDequeueModule: () => this.dequeueModule,
-        }
 
         this.executionModules = []
         for (let ix = 0; ix < params.executionConcurrency; ix += 1) {
             this.executionModules.push(new DaemonProcessorExecutionModule({
                 daemonId: params.daemonId,
                 databaseClient: params.databaseClient,
-                directory: directory,
+                dequeueModule: this.dequeueModule,
                 eventHandler: params.eventHandler,
-                processFn: params.processFn,
+                processorFn: params.processorFn,
                 schema: params.schema,
             }))
         }

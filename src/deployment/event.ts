@@ -32,6 +32,7 @@ export type HydraEventMessageCleaned = {
     daemonId: string | null
     eventType: "MESSAGE_CLEANED"
     messageId: string
+    groupId: string
     queueId: string
 }
 
@@ -40,6 +41,7 @@ export type HydraEventMessageScheduled = {
     eventType: "MESSAGE_SCHEDULED"
     messageId: string
     queueId: string
+    groupId: string
     scheduleId: string
 }
 
@@ -47,6 +49,7 @@ export type HydraEventMessageUnlocked = {
     daemonId: string | null
     eventType: "MESSAGE_UNLOCKED"
     messageId: string
+    groupId: string
     queueId: string
 }
 

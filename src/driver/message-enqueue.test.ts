@@ -15,8 +15,8 @@ beforeEach(async () => {
 })
 
 test("messageEnqueue", async () => {
-    const queueAlpha = deployment.queue("alpha")
-    await queueAlpha.message.enqueue({
+    const queueAlpha = deployment.group("foo").queue("alpha")
+    await queueAlpha.enqueue({
         databaseClient: pool,
         deduplicationId: "hello",
         numAttempts: 42,
@@ -41,16 +41,16 @@ test("messageEnqueue", async () => {
 })
 
 test("messageEnqueue max queue capacity", async () => {
-    const queueAlpha = deployment.queue("alpha")
+    const queueAlpha = deployment.group("foo").queue("alpha")
     await queueAlpha.config.set({ databaseClient: pool, maxCapacity: 1, maxConcurrency: 1 })
 
-    await queueAlpha.message.enqueue({
+    await queueAlpha.enqueue({
         databaseClient: pool,
         deduplicationId: "hello",
         payload: "hello",
     })
 
-    const result = await queueAlpha.message.enqueue({
+    const result = await queueAlpha.enqueue({
         databaseClient: pool,
         deduplicationId: "hello",
         payload: "hello",
@@ -61,18 +61,18 @@ test("messageEnqueue max queue capacity", async () => {
 
 test("messageEnqueue deduplication", async () => {
     let numRows: number
-    const queueAlpha = deployment.queue("alpha")
+    const queueAlpha = deployment.group("foo").queue("alpha")
     await queueAlpha.config.set({ databaseClient: pool, maxCapacity: null, maxConcurrency: 1 })
-    const queueBeta = deployment.queue("beta")
+    const queueBeta = deployment.group("foo").queue("beta")
     await queueBeta.config.set({ databaseClient: pool, maxCapacity: null, maxConcurrency: 1 })
 
-    await queueAlpha.message.enqueue({
+    await queueAlpha.enqueue({
         databaseClient: pool,
         deduplicationId: "hello",
         payload: "hello",
     })
 
-    const firstBetaMessage = await queueBeta.message.enqueue({
+    const firstBetaMessage = await queueBeta.enqueue({
         databaseClient: pool,
         deduplicationId: "hello",
         payload: "hello",
@@ -82,7 +82,7 @@ test("messageEnqueue deduplication", async () => {
     expect(numRows).toBe(2)
     expect(firstBetaMessage.resultType).toBe("MESSAGE_ENQUEUED")
 
-    const secondAlphaMessage = await queueAlpha.message.enqueue({
+    const secondAlphaMessage = await queueAlpha.enqueue({
         databaseClient: pool,
         deduplicationId: "hello",
         payload: "goodbye",

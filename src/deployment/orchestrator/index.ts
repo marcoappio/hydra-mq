@@ -1,7 +1,7 @@
 import type { DatabaseClient } from "@src/core/database-client"
-import { DaemonCleaner as DaemonOrchestratorCleanModule } from "@src/deployment/daemon/orchestrator/cleaner"
-import { DaemonScheduler as DaemonOrchestratorScheduleModule } from "@src/deployment/daemon/orchestrator/scheduler"
-import { DaemonUnlocker as DaemonOrchestratorUnlockModule } from "@src/deployment/daemon/orchestrator/unlocker"
+import { DaemonCleaner as DaemonOrchestratorCleanModule } from "@src/deployment/orchestrator/cleaner"
+import { DaemonScheduler as DaemonOrchestratorScheduleModule } from "@src/deployment/orchestrator/scheduler"
+import { DaemonUnlocker as DaemonOrchestratorUnlockModule } from "@src/deployment/orchestrator/unlocker"
 import type { HydraEventHandler } from "@src/deployment/event"
 
 export class DaemonOrchestrator {
@@ -14,7 +14,7 @@ export class DaemonOrchestrator {
         cleanTimeoutSecs: number
         daemonId: string | null
         databaseClient: DatabaseClient
-        eventHandler: HydraEventHandler
+        eventHandler: HydraEventHandler | null
         scheduleTimeoutSecs: number
         schema: string
         unlockTimeoutSecs: number

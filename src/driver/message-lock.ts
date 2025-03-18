@@ -1,5 +1,5 @@
 import type { DatabaseClient } from "@src/core/database-client"
-import { sql } from "@src/core/sql"
+import { refNode, sql, valueNode } from "@src/core/sql"
 import { ResultCode } from "@src/driver/result-code"
 
 type QueryResultMessageNotFound = {
@@ -31,9 +31,9 @@ export const messageLock = async (params: {
     messageId: string
     schema: string
 }): Promise<DriverResult> => {
-    const result = await params.databaseClient.query(sql.build `
-        SELECT * FROM ${sql.ref(params.schema)}.message_lock(
-            ${sql.value(params.messageId)}
+    const result = await params.databaseClient.query(sql `
+        SELECT * FROM ${refNode(params.schema)}.message_lock(
+            ${valueNode(params.messageId)}
         )
     `).then(res => res.rows[0]) as QueryResult
     if (result.o_result_code === ResultCode.MESSAGE_NOT_FOUND) {

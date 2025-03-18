@@ -1,36 +1,31 @@
 import type { DatabaseClient } from "@src/core/database-client"
-import type { DaemonProcessorDirectory } from "@src/deployment/daemon/processor/directory"
 import type { HydraEventHandler } from "@src/deployment/event"
+import type { DaemonProcessorDequeueModule } from "@src/deployment/group/processor/dequeue"
+import type { ProcessorFn } from "@src/deployment/group/processor/process-fn"
 import { messageFinalize } from "@src/driver/message-finalize"
 import { messageLock } from "@src/driver/message-lock"
 
-export type ProcessFn = (payload: string, metadata: {
-    markAsFailed: () => void
-    messageId: string
-    queueId: string
-}) => Promise<void>
-
 export class DaemonProcessorExecutionModule {
 
-    private readonly eventHandler: HydraEventHandler
+    private readonly eventHandler: HydraEventHandler | null
     private readonly databaseClient: DatabaseClient
     private readonly schema: string
     private readonly daemonId: string | null
     private readonly promise: Promise<void>
-    private readonly processFn: ProcessFn
-    private readonly directory: DaemonProcessorDirectory
+    private readonly processorFn: ProcessorFn
+    private readonly dequeueModule: DaemonProcessorDequeueModule
 
     constructor(params: {
         daemonId: string | null
         databaseClient: DatabaseClient
-        directory: DaemonProcessorDirectory
-        eventHandler: HydraEventHandler
-        processFn: ProcessFn
+        dequeueModule: DaemonProcessorDequeueModule
+        eventHandler: HydraEventHandler | null
+        processorFn: ProcessorFn
         schema: string
     }) {
         this.schema = params.schema
-        this.directory = params.directory
-        this.processFn = params.processFn
+        this.dequeueModule = params.dequeueModule
+        this.processorFn = params.processorFn
         this.databaseClient = params.databaseClient
         this.daemonId = params.daemonId
         this.eventHandler = params.eventHandler
@@ -41,23 +36,16 @@ export class DaemonProcessorExecutionModule {
         const run = true
 
         while (run) {
-            const dequeueResult = await this.directory.getDequeueModule().dequeue()
+            const dequeueResult = await this.dequeueModule.dequeue()
             if (dequeueResult.resultType === "END_SIGNAL") {
                 break
             }
-
-            this.eventHandler({
-                daemonId: this.daemonId,
-                eventType: "MESSAGE_DEQUEUED",
-                messageId: dequeueResult.messageId,
-                queueId: dequeueResult.queueId,
-            })
 
             let isProcessed = true
             let error: any = null
 
             try {
-                await this.processFn(dequeueResult.payload, {
+                await this.processorFn(dequeueResult.payload, {
                     markAsFailed: () => { isProcessed = false },
                     messageId: dequeueResult.messageId,
                     queueId: dequeueResult.queueId,
@@ -78,12 +66,14 @@ export class DaemonProcessorExecutionModule {
                     throw new Error(`Message: ${dequeueResult.messageId} could not be finalized`)
                 }
 
-                this.eventHandler({
-                    daemonId: this.daemonId,
-                    eventType: "MESSAGE_PROCESSED",
-                    messageId: dequeueResult.messageId,
-                    queueId: dequeueResult.queueId,
-                })
+                if(this.eventHandler) {
+                    this.eventHandler({
+                        daemonId: this.daemonId,
+                        eventType: "MESSAGE_PROCESSED",
+                        messageId: dequeueResult.messageId,
+                        queueId: dequeueResult.queueId,
+                    })
+                }
 
             } else if (dequeueResult.numAttempts <= 1) {
                 const finalizeResult = await messageFinalize({
@@ -96,13 +86,15 @@ export class DaemonProcessorExecutionModule {
                     throw new Error(`Message: ${dequeueResult.messageId} could not be finalized`)
                 }
 
-                this.eventHandler({
-                    daemonId: this.daemonId,
-                    error: error,
-                    eventType: "MESSAGE_EXPIRED",
-                    messageId: dequeueResult.messageId,
-                    queueId: dequeueResult.queueId,
-                })
+                if(this.eventHandler) {
+                    this.eventHandler({
+                        daemonId: this.daemonId,
+                        error: error,
+                        eventType: "MESSAGE_EXPIRED",
+                        messageId: dequeueResult.messageId,
+                        queueId: dequeueResult.queueId,
+                    })
+                }
             } else {
                 const lockResult = await messageLock({
                     databaseClient: this.databaseClient,
@@ -114,13 +106,15 @@ export class DaemonProcessorExecutionModule {
                     throw new Error(`Message: ${dequeueResult.messageId} could not be locked`)
                 }
 
-                this.eventHandler({
-                    daemonId: this.daemonId,
-                    error: error,
-                    eventType: "MESSAGE_LOCKED",
-                    messageId: dequeueResult.messageId,
-                    queueId: dequeueResult.queueId,
-                })
+                if(this.eventHandler) {
+                    this.eventHandler({
+                        daemonId: this.daemonId,
+                        error: error,
+                        eventType: "MESSAGE_LOCKED",
+                        messageId: dequeueResult.messageId,
+                        queueId: dequeueResult.queueId,
+                    })
+                }
             }
 
         }

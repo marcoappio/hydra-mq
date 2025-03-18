@@ -1,10 +1,10 @@
-import { type SqlRefNode, sql } from "@src/core/sql"
+import { type SqlRefNode, sql, valueNode } from "@src/core/sql"
 import { ResultCode } from "@src/driver/result-code"
 
 export const functionMessageArchiveCreateSql = (params: {
     schema: SqlRefNode
 }) => [
-    sql.build`
+    sql `
         CREATE FUNCTION ${params.schema}.message_finalize(
             p_message_id UUID
         )
@@ -17,11 +17,11 @@ export const functionMessageArchiveCreateSql = (params: {
         BEGIN
             DELETE FROM ${params.schema}.message
             WHERE id = p_message_id
-            RETURNING queue_id, payload, created_at
+            RETURNING group_id, queue_id
             INTO v_message;
 
             IF v_message IS NULL THEN
-                RETURN QUERY SELECT ${sql.value(ResultCode.MESSAGE_NOT_FOUND)};
+                RETURN QUERY SELECT ${valueNode(ResultCode.MESSAGE_NOT_FOUND)};
                 RETURN;
             END IF;
 
@@ -30,8 +30,11 @@ export const functionMessageArchiveCreateSql = (params: {
                 current_concurrency = current_concurrency - 1
             WHERE id = v_message.queue_id;
             
-            PERFORM ${params.schema}.queue_advance(v_message.queue_id);
-            RETURN QUERY SELECT ${sql.value(ResultCode.MESSAGE_FINALIZED)};
+            PERFORM ${params.schema}.queue_advance(
+                v_message.queue_id,
+                v_message.group_id
+            );
+            RETURN QUERY SELECT ${valueNode(ResultCode.MESSAGE_FINALIZED)};
         END;
         $$ LANGUAGE plpgsql;
     `,

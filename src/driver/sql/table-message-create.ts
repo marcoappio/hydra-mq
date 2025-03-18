@@ -1,12 +1,13 @@
-import { type SqlRefNode, sql } from "@src/core/sql"
+import { type SqlRefNode, sql, valueNode } from "@src/core/sql"
 import { MessageStatus } from "@src/driver/message-status"
 
 export const tableMessageCreateSql = (params: {
     schema: SqlRefNode
 }) => [
-    sql.build `
+    sql `
         CREATE TABLE ${params.schema}.message (
             id UUID NOT NULL,
+            group_id TEXT NOT NULL,
             queue_id TEXT NOT NULL,
             payload TEXT NOT NULL,
             priority INTEGER,
@@ -15,43 +16,56 @@ export const tableMessageCreateSql = (params: {
             num_attempts INTEGER NOT NULL,
             deduplication_id TEXT,
             status INTEGER NOT NULL,
-            unlocked_at TIMESTAMP,
+            unlock_after TIMESTAMP,
+            clean_after TIMESTAMP,
+            waiting_at TIMESTAMP,
+            ready_at TIMESTAMP,
             processed_at TIMESTAMP,
-            stale_at TIMESTAMP,
             created_at TIMESTAMP NOT NULL,
             updated_at TIMESTAMP NOT NULL,
             PRIMARY KEY (id)
         );
     `,
 
-    sql.build `
+    sql `
         CREATE UNIQUE INDEX message_deduplication_id_ix
         ON ${params.schema}.message (
+            group_id,
             queue_id,
             deduplication_id
         ) WHERE processed_at IS NULL;
     `,
 
-    sql.build `
-        CREATE INDEX message_clean_ix
+    sql `
+        CREATE INDEX message_processing_ix
         ON ${params.schema}.message (
-            stale_at ASC NULLS LAST
-        ) WHERE status = ${sql.value(MessageStatus.PROCESSING)};
+            clean_after ASC
+        ) WHERE status = ${valueNode(MessageStatus.PROCESSING)};
     `,
 
-    sql.build `
-        CREATE INDEX message_unlock_ix
+    sql `
+        CREATE INDEX message_ready_ix
         ON ${params.schema}.message (
-            unlocked_at ASC NULLS FIRST
-        ) WHERE STATUS = ${sql.value(MessageStatus.LOCKED)};
+            group_id,
+            priority DESC NULLS LAST,
+            ready_at ASC
+        ) WHERE STATUS = ${valueNode(MessageStatus.READY)};
     `,
 
-    sql.build `
-        CREATE INDEX message_advance_ix
+    sql `
+        CREATE INDEX message_locked_ix
         ON ${params.schema}.message (
+            unlock_after ASC
+        ) WHERE STATUS = ${valueNode(MessageStatus.LOCKED)};
+    `,
+
+    sql `
+        CREATE INDEX message_waiting_ix
+        ON ${params.schema}.message (
+            group_id,
             queue_id,
             priority DESC NULLS LAST,
-            created_at ASC
-        ) WHERE STATUS = ${sql.value(MessageStatus.WAITING)};
+            waiting_at ASC
+        ) WHERE STATUS = ${valueNode(MessageStatus.WAITING)};
     `,
 ]

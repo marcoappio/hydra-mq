@@ -1,5 +1,5 @@
 import type { DatabaseClient } from "@src/core/database-client"
-import { sql } from "@src/core/sql"
+import { refNode, sql, valueNode } from "@src/core/sql"
 import { ResultCode } from "@src/driver/result-code"
 
 type DriverResultMessageDequeued = {
@@ -40,12 +40,12 @@ type DriverResult =
 
 export const messageDequeue = async (params: {
     databaseClient: DatabaseClient
-    queuePrefix: string
+    groupId: string
     schema: string
 }): Promise<DriverResult> => {
-    const result = await params.databaseClient.query(sql.build`
-        SELECT * FROM ${sql.ref(params.schema)}.message_dequeue(
-            ${sql.value(params.queuePrefix)}
+    const result = await params.databaseClient.query(sql `
+        SELECT * FROM ${refNode(params.schema)}.message_dequeue(
+            ${valueNode(params.groupId)}
         )
     `).then(res => res.rows[0]) as QueryResult
 

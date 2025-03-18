@@ -2,11 +2,11 @@ import type { DatabaseClient } from "@src/core/database-client"
 import { EggTimer } from "@src/core/egg-timer"
 import { Semaphore } from "@src/core/semaphore"
 import type { HydraEventHandler } from "@src/deployment/event"
-import { messageSchedule } from "@src/driver/message-schedule"
+import { messageClean } from "@src/driver/message-clean"
 
-export class DaemonScheduler {
+export class DaemonCleaner {
 
-    private readonly eventHandler: HydraEventHandler
+    private readonly eventHandler: HydraEventHandler | null
     private readonly databaseClient: DatabaseClient
     private readonly schema: string
     private readonly timeoutSecs: number
@@ -20,39 +20,41 @@ export class DaemonScheduler {
     constructor(params: {
         daemonId: string | null
         databaseClient: DatabaseClient
-        eventHandler: HydraEventHandler
+        eventHandler: HydraEventHandler | null
         schema: string
         timeoutSecs: number
 
     }) {
         this.daemonId = params.daemonId
         this.schema = params.schema
+        this.eventHandler = params.eventHandler
         this.timeoutSecs = params.timeoutSecs
         this.databaseClient = params.databaseClient
         this.semaphore = new Semaphore(0)
         this.eggTimer = new EggTimer(() => this.semaphore.release())
         this.shouldStop = false
         this.promise = this.run()
-        this.eventHandler = params.eventHandler
     }
 
     private async run() {
         while (!this.shouldStop) {
-            const result = await messageSchedule({
+
+            const result = await messageClean({
                 databaseClient: this.databaseClient,
                 schema: this.schema,
             })
 
-            if (result.resultType === "SCHEDULE_NOT_AVAILABLE") {
+            if (result.resultType === "MESSAGE_NOT_AVAILABLE") {
                 this.eggTimer.set(this.timeoutSecs * 1000)
                 await this.semaphore.acquire()
-            } else if (result.resultType === "MESSAGE_ENQUEUED") {
+                continue
+            } else if(this.eventHandler) {
                 this.eventHandler({
                     daemonId: this.daemonId,
-                    eventType: "MESSAGE_SCHEDULED",
+                    groupId: result.groupId,
+                    eventType: "MESSAGE_CLEANED",
                     messageId: result.messageId,
                     queueId: result.queueId,
-                    scheduleId: result.scheduleId,
                 })
             }
         }

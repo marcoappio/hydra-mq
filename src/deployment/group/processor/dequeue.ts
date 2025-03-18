@@ -1,6 +1,7 @@
 import type { DatabaseClient } from "@src/core/database-client"
 import { EggTimer } from "@src/core/egg-timer"
 import { Semaphore } from "@src/core/semaphore"
+import type { HydraEventHandler } from "@src/deployment/event"
 import { messageDequeue } from "@src/driver/message-dequeue"
 
 type DequeueResultEndSignal = {
@@ -29,14 +30,18 @@ export class DaemonProcessorDequeueModule {
     private readonly eggTimer: EggTimer
     private readonly requestQueue: RequestCallback[]
     private readonly semaphore: Semaphore
-    private readonly queuePrefix: string
+    private readonly groupId: string
     private readonly promise: Promise<void>
+    private readonly daemonId: string | null
+    private readonly eventHandler: HydraEventHandler | null
 
     private shouldStop: boolean
 
     constructor(params: {
+        daemonId: string | null
         databaseClient: DatabaseClient
-        queuePrefix: string
+        eventHandler: HydraEventHandler | null
+        groupId : string
         schema: string
         timeoutSecs: number
     }) {
@@ -45,7 +50,9 @@ export class DaemonProcessorDequeueModule {
         this.timeoutSecs = params.timeoutSecs
         this.databaseClient = params.databaseClient
         this.eggTimer = new EggTimer(() => this.semaphore.release())
-        this.queuePrefix = params.queuePrefix
+        this.groupId = params.groupId
+        this.eventHandler = params.eventHandler
+        this.daemonId = params.daemonId
         this.requestQueue = []
         this.shouldStop = false
         this.promise = this.run()
@@ -60,7 +67,7 @@ export class DaemonProcessorDequeueModule {
 
             const dequeueResult = await messageDequeue({
                 databaseClient: this.databaseClient,
-                queuePrefix: this.queuePrefix,
+                groupId: this.groupId,
                 schema: this.schema,
             })
 
@@ -68,6 +75,13 @@ export class DaemonProcessorDequeueModule {
                 this.eggTimer.set(this.timeoutSecs * 1_000)
                 await this.semaphore.acquire()
                 continue
+            } else if(this.eventHandler) {
+                this.eventHandler({
+                    daemonId: this.daemonId,
+                    eventType: "MESSAGE_DEQUEUED",
+                    messageId: dequeueResult.messageId,
+                    queueId: dequeueResult.queueId,
+                })
             }
 
             const request = this.requestQueue.shift() as RequestCallback
