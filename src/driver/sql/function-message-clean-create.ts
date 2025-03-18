@@ -1,6 +1,6 @@
-import { type SqlRefNode, sql } from '@src/core/sql'
-import { ResultCode } from '@src/driver/result-code'
-import { queryMessageClean } from '@src/driver/sql/query/message-clean'
+import { type SqlRefNode, sql } from "@src/core/sql"
+import { ResultCode } from "@src/driver/result-code"
+import { queryMessageClean } from "@src/driver/sql/query/message-clean"
 
 export const functionMessageCleanCreateSql = (params: {
     schema: SqlRefNode
@@ -8,7 +8,7 @@ export const functionMessageCleanCreateSql = (params: {
     const cleanQuery = queryMessageClean({
         limit: sql.value(1),
         schema: params.schema,
-        threshold: sql.ref('v_now'),
+        threshold: sql.ref("v_now"),
     })
     return [
         sql.build `

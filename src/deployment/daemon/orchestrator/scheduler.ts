@@ -1,8 +1,8 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { EggTimer } from '@src/core/egg-timer'
-import { Semaphore } from '@src/core/semaphore'
-import type { HydraEventHandler } from '@src/deployment/event'
-import { messageSchedule } from '@src/driver/message-schedule'
+import type { DatabaseClient } from "@src/core/database-client"
+import { EggTimer } from "@src/core/egg-timer"
+import { Semaphore } from "@src/core/semaphore"
+import type { HydraEventHandler } from "@src/deployment/event"
+import { messageSchedule } from "@src/driver/message-schedule"
 
 export class DaemonScheduler {
 
@@ -43,13 +43,13 @@ export class DaemonScheduler {
                 schema: this.schema,
             })
 
-            if (result.resultType === 'SCHEDULE_NOT_AVAILABLE') {
+            if (result.resultType === "SCHEDULE_NOT_AVAILABLE") {
                 this.eggTimer.set(this.timeoutSecs * 1000)
                 await this.semaphore.acquire()
-            } else if (result.resultType === 'MESSAGE_ENQUEUED') {
+            } else if (result.resultType === "MESSAGE_ENQUEUED") {
                 this.eventHandler({
                     daemonId: this.daemonId,
-                    eventType: 'MESSAGE_SCHEDULED',
+                    eventType: "MESSAGE_SCHEDULED",
                     messageId: result.messageId,
                     queueId: result.queueId,
                     scheduleId: result.scheduleId,

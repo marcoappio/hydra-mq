@@ -1,5 +1,5 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { sql } from '@src/core/sql'
+import type { DatabaseClient } from "@src/core/database-client"
+import { sql } from "@src/core/sql"
 
 export const scheduleClear = async (params: {
     databaseClient: DatabaseClient

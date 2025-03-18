@@ -1,5 +1,5 @@
-import { type SqlRefNode, sql } from '@src/core/sql'
-import { MessageStatus } from '@src/driver/message-status'
+import { type SqlRefNode, sql } from "@src/core/sql"
+import { MessageStatus } from "@src/driver/message-status"
 
 export const tableMessageCreateSql = (params: {
     schema: SqlRefNode

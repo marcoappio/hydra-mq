@@ -1,4 +1,4 @@
-import { type SqlRefNode, sql } from '@src/core/sql'
+import { type SqlRefNode, sql } from "@src/core/sql"
 
 export const functionQueueConfigClearCreateSql = (params: {
     schema: SqlRefNode

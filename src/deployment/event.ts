@@ -1,13 +1,13 @@
 export type HydraEventMessageDequeued = {
     daemonId: string | null
-    eventType: 'MESSAGE_DEQUEUED'
+    eventType: "MESSAGE_DEQUEUED"
     messageId: string
     queueId: string
 }
 
 export type HydraEventMessageProcessed = {
     daemonId: string | null
-    eventType: 'MESSAGE_PROCESSED'
+    eventType: "MESSAGE_PROCESSED"
     messageId: string
     queueId: string
 }
@@ -15,7 +15,7 @@ export type HydraEventMessageProcessed = {
 export type HydraEventMessageExpired = {
     daemonId: string | null
     error: any
-    eventType: 'MESSAGE_EXPIRED'
+    eventType: "MESSAGE_EXPIRED"
     messageId: string
     queueId: string
 }
@@ -23,21 +23,21 @@ export type HydraEventMessageExpired = {
 export type HydraEventMessageLocked = {
     daemonId: string | null
     error: any
-    eventType: 'MESSAGE_LOCKED'
+    eventType: "MESSAGE_LOCKED"
     messageId: string
     queueId: string
 }
 
 export type HydraEventMessageCleaned = {
     daemonId: string | null
-    eventType: 'MESSAGE_CLEANED'
+    eventType: "MESSAGE_CLEANED"
     messageId: string
     queueId: string
 }
 
 export type HydraEventMessageScheduled = {
     daemonId: string | null
-    eventType: 'MESSAGE_SCHEDULED'
+    eventType: "MESSAGE_SCHEDULED"
     messageId: string
     queueId: string
     scheduleId: string
@@ -45,7 +45,7 @@ export type HydraEventMessageScheduled = {
 
 export type HydraEventMessageUnlocked = {
     daemonId: string | null
-    eventType: 'MESSAGE_UNLOCKED'
+    eventType: "MESSAGE_UNLOCKED"
     messageId: string
     queueId: string
 }

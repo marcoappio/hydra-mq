@@ -1,27 +1,27 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { sql } from '@src/core/sql'
-import { ResultCode } from '@src/driver/result-code'
+import type { DatabaseClient } from "@src/core/database-client"
+import { sql } from "@src/core/sql"
+import { ResultCode } from "@src/driver/result-code"
 
 type DriverResultMessageEnqueued = {
     messageId: string
     queueId: string
-    resultType: 'MESSAGE_ENQUEUED' | 'MESSAGE_UPDATED'
+    resultType: "MESSAGE_ENQUEUED" | "MESSAGE_UPDATED"
     scheduleId: string
 }
 
 type DriverResultQueueCapacityExceeded = {
     queueId: string
-    resultType: 'QUEUE_CAPACITY_EXCEEDED'
+    resultType: "QUEUE_CAPACITY_EXCEEDED"
     scheduleId: string
 }
 
 type DriverResultScheduleNotAvailable = {
-    resultType: 'SCHEDULE_NOT_AVAILABLE'
+    resultType: "SCHEDULE_NOT_AVAILABLE"
 }
 
 type DriverResultScheduleExhausted = {
     queueId: string
-    resultType: 'SCHEDULE_EXHAUSTED'
+    resultType: "SCHEDULE_EXHAUSTED"
     scheduleId: string
 }
 
@@ -74,34 +74,34 @@ export const messageSchedule = async (params: {
     `).then(res => res.rows[0]) as QueryResult
 
     if (result.o_result_code === ResultCode.SCHEDULE_NOT_AVAILABLE) {
-        return { resultType: 'SCHEDULE_NOT_AVAILABLE' }
+        return { resultType: "SCHEDULE_NOT_AVAILABLE" }
     } else if (result.o_result_code === ResultCode.SCHEDULE_EXHAUSTED) {
         return {
             queueId: result.o_queued_id,
-            resultType: 'SCHEDULE_EXHAUSTED',
+            resultType: "SCHEDULE_EXHAUSTED",
             scheduleId: result.o_schedule_id,
         }
     } else if (result.o_result_code === ResultCode.MESSAGE_ENQUEUED) {
         return {
             messageId: result.o_message_id,
             queueId: result.o_queue_id,
-            resultType: 'MESSAGE_ENQUEUED',
+            resultType: "MESSAGE_ENQUEUED",
             scheduleId: result.o_schedule_id,
         }
     } else if (result.o_result_code === ResultCode.MESSAGE_UPDATED) {
         return {
             messageId: result.o_message_id,
             queueId: result.o_queue_id,
-            resultType: 'MESSAGE_UPDATED',
+            resultType: "MESSAGE_UPDATED",
             scheduleId: result.o_schedule_id,
         }
     } else if (result.o_result_code === ResultCode.QUEUE_CAPACITY_EXCEEDED) {
         return {
             queueId: result.o_queued_id,
-            resultType: 'QUEUE_CAPACITY_EXCEEDED',
+            resultType: "QUEUE_CAPACITY_EXCEEDED",
             scheduleId: result.o_schedule_id,
         }
     } else {
-        throw new Error('Unexpected result code')
+        throw new Error("Unexpected result code")
     }
 }

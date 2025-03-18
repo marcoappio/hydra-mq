@@ -1,15 +1,15 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { sql } from '@src/core/sql'
-import { ResultCode } from '@src/driver/result-code'
+import type { DatabaseClient } from "@src/core/database-client"
+import { sql } from "@src/core/sql"
+import { ResultCode } from "@src/driver/result-code"
 
 type DriverResultMessageUnlocked = {
     messageId: string
     queueId: string
-    resultType: 'MESSAGE_UNLOCKED'
+    resultType: "MESSAGE_UNLOCKED"
 }
 
 type DriverResultMessageNotAvailable = {
-    resultType: 'MESSAGE_NOT_AVAILABLE'
+    resultType: "MESSAGE_NOT_AVAILABLE"
 }
 
 type QueryResultMessageNotAvailable = {
@@ -41,15 +41,15 @@ export const messageUnlock = async (params: {
     `).then(res => res.rows[0]) as QueryResult
 
     if (result.o_result_code === ResultCode.MESSAGE_NOT_AVAILABLE) {
-        return { resultType: 'MESSAGE_NOT_AVAILABLE' }
+        return { resultType: "MESSAGE_NOT_AVAILABLE" }
     } else if (result.o_result_code === ResultCode.MESSAGE_UNLOCKED) {
         return {
             messageId: result.o_message_id,
             queueId: result.o_queue_id,
-            resultType: 'MESSAGE_UNLOCKED',
+            resultType: "MESSAGE_UNLOCKED",
         }
     } else {
-        throw new Error('Unexpected result code')
+        throw new Error("Unexpected result code")
     }
 
 }

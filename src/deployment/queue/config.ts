@@ -1,6 +1,6 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { queueConfigClear } from '@src/driver/queue-config-clear'
-import { queueConfigSet } from '@src/driver/queue-config-set'
+import type { DatabaseClient } from "@src/core/database-client"
+import { queueConfigClear } from "@src/driver/queue-config-clear"
+import { queueConfigSet } from "@src/driver/queue-config-set"
 
 export class QueueConfigNamespace {
 

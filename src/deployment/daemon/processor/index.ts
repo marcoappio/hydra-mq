@@ -1,8 +1,8 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { DaemonProcessorDequeueModule } from '@src/deployment/daemon/processor/dequeue'
-import type { DaemonProcessorDirectory } from '@src/deployment/daemon/processor/directory'
-import { DaemonProcessorExecutionModule } from '@src/deployment/daemon/processor/execution'
-import type { HydraEventHandler } from '@src/deployment/event'
+import type { DatabaseClient } from "@src/core/database-client"
+import { DaemonProcessorDequeueModule } from "@src/deployment/daemon/processor/dequeue"
+import type { DaemonProcessorDirectory } from "@src/deployment/daemon/processor/directory"
+import { DaemonProcessorExecutionModule } from "@src/deployment/daemon/processor/execution"
+import type { HydraEventHandler } from "@src/deployment/event"
 
 export type ProcessFn = (payload: string, metadata: {
     markAsFailed: () => void

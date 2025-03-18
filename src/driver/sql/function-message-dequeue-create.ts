@@ -1,14 +1,14 @@
-import { type SqlRefNode, sql } from '@src/core/sql'
-import { MessageStatus } from '@src/driver/message-status'
-import { ResultCode } from '@src/driver/result-code'
-import { queryMessageDequeue } from '@src/driver/sql/query/message-dequeue'
+import { type SqlRefNode, sql } from "@src/core/sql"
+import { MessageStatus } from "@src/driver/message-status"
+import { ResultCode } from "@src/driver/result-code"
+import { queryMessageDequeue } from "@src/driver/sql/query/message-dequeue"
 
 export const functionMessageDequeueCreateSql = (params: {
     schema: SqlRefNode
 }) => {
     const dequeueQuery = queryMessageDequeue({
         limit: sql.value(1),
-        queueIdPrefix: sql.ref('p_queue_id_prefix'),
+        queueIdPrefix: sql.ref("p_queue_id_prefix"),
         schema: params.schema,
     })
 

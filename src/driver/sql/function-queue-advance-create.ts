@@ -1,13 +1,13 @@
-import { type SqlRefNode, sql } from '@src/core/sql'
-import { MessageStatus } from '@src/driver/message-status'
-import { queryMessageAdvance } from '@src/driver/sql/query/message-advance'
+import { type SqlRefNode, sql } from "@src/core/sql"
+import { MessageStatus } from "@src/driver/message-status"
+import { queryMessageAdvance } from "@src/driver/sql/query/message-advance"
 
 export const functionQueueAdvanceCreateSql = (params: {
     schema: SqlRefNode
 }) => {
     const advanceQuery = queryMessageAdvance({
         limit: sql.value(1),
-        queueId: sql.ref('p_queue_id'),
+        queueId: sql.ref("p_queue_id"),
         schema: params.schema,
     })
 

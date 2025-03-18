@@ -1,5 +1,5 @@
-import { type SqlRefNode, sql } from '@src/core/sql'
-import { ResultCode } from '@src/driver/result-code'
+import { type SqlRefNode, sql } from "@src/core/sql"
+import { ResultCode } from "@src/driver/result-code"
 
 export const functionMessageArchiveCreateSql = (params: {
     schema: SqlRefNode

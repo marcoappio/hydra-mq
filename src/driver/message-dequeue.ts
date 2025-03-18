@@ -1,17 +1,17 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { sql } from '@src/core/sql'
-import { ResultCode } from '@src/driver/result-code'
+import type { DatabaseClient } from "@src/core/database-client"
+import { sql } from "@src/core/sql"
+import { ResultCode } from "@src/driver/result-code"
 
 type DriverResultMessageDequeued = {
     messageId: string
     numAttempts: number
     payload: string
     queueId: string
-    resultType: 'MESSAGE_DEQUEUED'
+    resultType: "MESSAGE_DEQUEUED"
 }
 
 type DriverResultMessageNotAvailable = {
-    resultType: 'MESSAGE_NOT_AVAILABLE'
+    resultType: "MESSAGE_NOT_AVAILABLE"
 }
 
 type QueryResultMessageNotFound = {
@@ -50,16 +50,16 @@ export const messageDequeue = async (params: {
     `).then(res => res.rows[0]) as QueryResult
 
     if (result.o_result_code === ResultCode.MESSAGE_NOT_AVAILABLE) {
-        return { resultType: 'MESSAGE_NOT_AVAILABLE' }
+        return { resultType: "MESSAGE_NOT_AVAILABLE" }
     } else if (result.o_result_code === ResultCode.MESSAGE_DEQUEUED) {
         return {
             messageId: result.o_message_id,
             numAttempts: result.o_num_attempts,
             payload: result.o_payload,
             queueId: result.o_queue_id,
-            resultType: 'MESSAGE_DEQUEUED',
+            resultType: "MESSAGE_DEQUEUED",
         }
     } else {
-        throw new Error('Unexpected result code')
+        throw new Error("Unexpected result code")
     }
 }

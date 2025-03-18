@@ -1,7 +1,7 @@
-import { type SqlRefNode, sql } from '@src/core/sql'
-import { MessageStatus } from '@src/driver/message-status'
-import { ResultCode } from '@src/driver/result-code'
-import { queryMessageUnlock } from '@src/driver/sql/query/message-unlock'
+import { type SqlRefNode, sql } from "@src/core/sql"
+import { MessageStatus } from "@src/driver/message-status"
+import { ResultCode } from "@src/driver/result-code"
+import { queryMessageUnlock } from "@src/driver/sql/query/message-unlock"
 
 export const functionMessageUnlockCreateSql = (params: {
     schema: SqlRefNode
@@ -9,7 +9,7 @@ export const functionMessageUnlockCreateSql = (params: {
     const query = queryMessageUnlock({
         limit: sql.value(1),
         schema: params.schema,
-        threshold: sql.ref('v_now'),
+        threshold: sql.ref("v_now"),
     })
 
     return [

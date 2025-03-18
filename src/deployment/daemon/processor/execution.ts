@@ -1,8 +1,8 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import type { DaemonProcessorDirectory } from '@src/deployment/daemon/processor/directory'
-import type { HydraEventHandler } from '@src/deployment/event'
-import { messageFinalize } from '@src/driver/message-finalize'
-import { messageLock } from '@src/driver/message-lock'
+import type { DatabaseClient } from "@src/core/database-client"
+import type { DaemonProcessorDirectory } from "@src/deployment/daemon/processor/directory"
+import type { HydraEventHandler } from "@src/deployment/event"
+import { messageFinalize } from "@src/driver/message-finalize"
+import { messageLock } from "@src/driver/message-lock"
 
 export type ProcessFn = (payload: string, metadata: {
     markAsFailed: () => void
@@ -42,13 +42,13 @@ export class DaemonProcessorExecutionModule {
 
         while (run) {
             const dequeueResult = await this.directory.getDequeueModule().dequeue()
-            if (dequeueResult.resultType === 'END_SIGNAL') {
+            if (dequeueResult.resultType === "END_SIGNAL") {
                 break
             }
 
             this.eventHandler({
                 daemonId: this.daemonId,
-                eventType: 'MESSAGE_DEQUEUED',
+                eventType: "MESSAGE_DEQUEUED",
                 messageId: dequeueResult.messageId,
                 queueId: dequeueResult.queueId,
             })
@@ -74,13 +74,13 @@ export class DaemonProcessorExecutionModule {
                     schema: this.schema,
                 })
 
-                if (finalizeResult.resultType === 'MESSAGE_NOT_FOUND') {
+                if (finalizeResult.resultType === "MESSAGE_NOT_FOUND") {
                     throw new Error(`Message: ${dequeueResult.messageId} could not be finalized`)
                 }
 
                 this.eventHandler({
                     daemonId: this.daemonId,
-                    eventType: 'MESSAGE_PROCESSED',
+                    eventType: "MESSAGE_PROCESSED",
                     messageId: dequeueResult.messageId,
                     queueId: dequeueResult.queueId,
                 })
@@ -92,14 +92,14 @@ export class DaemonProcessorExecutionModule {
                     schema: this.schema,
                 })
 
-                if (finalizeResult.resultType === 'MESSAGE_NOT_FOUND') {
+                if (finalizeResult.resultType === "MESSAGE_NOT_FOUND") {
                     throw new Error(`Message: ${dequeueResult.messageId} could not be finalized`)
                 }
 
                 this.eventHandler({
                     daemonId: this.daemonId,
                     error: error,
-                    eventType: 'MESSAGE_EXPIRED',
+                    eventType: "MESSAGE_EXPIRED",
                     messageId: dequeueResult.messageId,
                     queueId: dequeueResult.queueId,
                 })
@@ -110,14 +110,14 @@ export class DaemonProcessorExecutionModule {
                     schema: this.schema,
                 })
 
-                if (lockResult.resultType === 'MESSAGE_NOT_FOUND') {
+                if (lockResult.resultType === "MESSAGE_NOT_FOUND") {
                     throw new Error(`Message: ${dequeueResult.messageId} could not be locked`)
                 }
 
                 this.eventHandler({
                     daemonId: this.daemonId,
                     error: error,
-                    eventType: 'MESSAGE_LOCKED',
+                    eventType: "MESSAGE_LOCKED",
                     messageId: dequeueResult.messageId,
                     queueId: dequeueResult.queueId,
                 })

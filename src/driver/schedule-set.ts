@@ -1,6 +1,6 @@
-import { parseCronExpr } from '@src/core/cron'
-import type { DatabaseClient } from '@src/core/database-client'
-import { sql } from '@src/core/sql'
+import { parseCronExpr } from "@src/core/cron"
+import type { DatabaseClient } from "@src/core/database-client"
+import { sql } from "@src/core/sql"
 
 export const scheduleSet = async (params: {
     cronExpr: string
@@ -16,7 +16,7 @@ export const scheduleSet = async (params: {
     timeoutSecs: number
 }) => {
     const parsedCronExpr = parseCronExpr(params.cronExpr)
-    if (parsedCronExpr.resultType === 'CRON_EXPR_INVALID') {
+    if (parsedCronExpr.resultType === "CRON_EXPR_INVALID") {
         throw new Error(`Invalid cron expression: ${params.cronExpr}`)
     }
 
@@ -38,5 +38,5 @@ export const scheduleSet = async (params: {
         )
     `)
 
-    return { resultType: 'SCHEDULE_SET' }
+    return { resultType: "SCHEDULE_SET" }
 }

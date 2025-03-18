@@ -1,10 +1,10 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { EggTimer } from '@src/core/egg-timer'
-import { Semaphore } from '@src/core/semaphore'
-import { messageDequeue } from '@src/driver/message-dequeue'
+import type { DatabaseClient } from "@src/core/database-client"
+import { EggTimer } from "@src/core/egg-timer"
+import { Semaphore } from "@src/core/semaphore"
+import { messageDequeue } from "@src/driver/message-dequeue"
 
 type DequeueResultEndSignal = {
-    resultType: 'END_SIGNAL'
+    resultType: "END_SIGNAL"
 }
 
 type DequeueResultMessage = {
@@ -12,7 +12,7 @@ type DequeueResultMessage = {
     numAttempts: number
     payload: string
     queueId: string
-    resultType: 'MESSAGE_DEQUEUED'
+    resultType: "MESSAGE_DEQUEUED"
 }
 
 type DequeueResult =
@@ -64,7 +64,7 @@ export class DaemonProcessorDequeueModule {
                 schema: this.schema,
             })
 
-            if (dequeueResult.resultType === 'MESSAGE_NOT_AVAILABLE') {
+            if (dequeueResult.resultType === "MESSAGE_NOT_AVAILABLE") {
                 this.eggTimer.set(this.timeoutSecs * 1_000)
                 await this.semaphore.acquire()
                 continue
@@ -75,13 +75,13 @@ export class DaemonProcessorDequeueModule {
         }
 
         for (const request of this.requestQueue) {
-            request({ resultType: 'END_SIGNAL' })
+            request({ resultType: "END_SIGNAL" })
         }
     }
 
     async dequeue(): Promise<DequeueResult> {
         if (this.shouldStop) {
-            return { resultType: 'END_SIGNAL' }
+            return { resultType: "END_SIGNAL" }
         }
 
         return new Promise((resolve) => {

@@ -1,6 +1,6 @@
-import { QueueConfigNamespace } from '@src/deployment/queue/config'
-import { QueueMessageNamespace } from '@src/deployment/queue/message'
-import { Schedule } from '@src/deployment/queue/schedule'
+import { QueueConfigNamespace } from "@src/deployment/queue/config"
+import { QueueMessageNamespace } from "@src/deployment/queue/message"
+import { Schedule } from "@src/deployment/queue/schedule"
 
 export class Queue {
 

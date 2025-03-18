@@ -1,8 +1,8 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { EggTimer } from '@src/core/egg-timer'
-import { Semaphore } from '@src/core/semaphore'
-import type { HydraEventHandler } from '@src/deployment/event'
-import { messageUnlock } from '@src/driver/message-unlock'
+import type { DatabaseClient } from "@src/core/database-client"
+import { EggTimer } from "@src/core/egg-timer"
+import { Semaphore } from "@src/core/semaphore"
+import type { HydraEventHandler } from "@src/deployment/event"
+import { messageUnlock } from "@src/driver/message-unlock"
 
 export class DaemonUnlocker {
 
@@ -44,14 +44,14 @@ export class DaemonUnlocker {
                 schema: this.schema,
             })
 
-            if (result.resultType === 'MESSAGE_NOT_AVAILABLE') {
+            if (result.resultType === "MESSAGE_NOT_AVAILABLE") {
                 this.eggTimer.set(this.timeoutSecs * 1000)
                 await this.semaphore.acquire()
                 continue
             } else {
                 this.eventHandler({
                     daemonId: this.daemonId,
-                    eventType: 'MESSAGE_UNLOCKED',
+                    eventType: "MESSAGE_UNLOCKED",
                     messageId: result.messageId,
                     queueId: result.queueId,
                 })

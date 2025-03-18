@@ -1,6 +1,6 @@
-import { type SqlRefNode, sql } from '@src/core/sql'
-import { MessageStatus } from '@src/driver/message-status'
-import { ResultCode } from '@src/driver/result-code'
+import { type SqlRefNode, sql } from "@src/core/sql"
+import { MessageStatus } from "@src/driver/message-status"
+import { ResultCode } from "@src/driver/result-code"
 
 export const functionMessageEnqueueCreateSql = (params: {
     schema: SqlRefNode

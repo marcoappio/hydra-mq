@@ -1,6 +1,6 @@
-import { SCHEDULE_SLIPPAGE_MINS as SCHEDULE_SLIPPAGE_THRESHOLD_MINS } from '@src/core/config'
-import { type SqlRefNode, sql } from '@src/core/sql'
-import { ResultCode } from '@src/driver/result-code'
+import { SCHEDULE_SLIPPAGE_MINS as SCHEDULE_SLIPPAGE_THRESHOLD_MINS } from "@src/core/config"
+import { type SqlRefNode, sql } from "@src/core/sql"
+import { ResultCode } from "@src/driver/result-code"
 
 export const functionMessageScheduleCreateSql = (params: {
     schema: SqlRefNode
