@@ -1,5 +1,6 @@
 type ValueType =
     | number
+    | Date
     | string
     | boolean
     | null
@@ -16,7 +17,7 @@ export type SqlArrayNode = {
 
 export type SqlRefNode = {
     type: "REF"
-    value: string
+    value: string[]
 }
 
 export type SqlRawNode = {
@@ -33,23 +34,24 @@ export type SqlNode =
 const escapeValue = (val: ValueType): string => {
     if (val === null) {
         return "NULL"
-    }
-
-    if (typeof val === "number") {
+    } else if (typeof val === "number") {
         return val.toString()
-    }
-
-    if (typeof val === "boolean") {
+    } else if (typeof val === "boolean") {
         return val ? "TRUE" : "FALSE"
+    } else if(val instanceof Date) {
+        return `'${val.toISOString()}'`
+    } else if (typeof val === "string") {
+        const escapedStr = val.replace(/'/g, "''")
+        return `'${escapedStr}'`
+    } else {
+        throw new Error(`Unsupported value type: ${typeof val}`)
     }
 
-    const escapedStr = val.replace(/'/g, "''")
-    return `'${escapedStr}'`
 }
 
 export const valueNode = (val: ValueType): SqlValueNode => ({ type: "VALUE", value: val })
 
-export const refNode = (ident: string): SqlRefNode => ({ type: "REF", value: ident })
+export const refNode = (...idents: string[]): SqlRefNode => ({ type: "REF", value: idents })
 
 export const arrayNode = (arr: ValueType[]): SqlArrayNode => ({ type: "ARRAY", value: arr })
 
@@ -60,8 +62,10 @@ export const escapeValueNode = (node: SqlValueNode): string => {
 }
 
 export const escapeRefNode = (node: SqlRefNode): string => {
-    const escapedRef = node.value.replace(/"/g, "\"\"")
-    return `"${escapedRef}"`
+    return node.value
+        .map(x => x.replace(/"/g, "\"\""))
+        .map(x => `"${x}"`)
+        .join(".")
 }
 
 export const escapeArrayNode = (node: SqlArrayNode): string => {

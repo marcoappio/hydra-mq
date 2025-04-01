@@ -1,18 +1,24 @@
-import { arrayNode, rawNode, refNode, sql, valueNode } from "@src/core/sql"
-import { expect, test } from "bun:test"
+import { arrayNode, rawNode, refNode, sql, valueNode, type SqlNode } from "@src/core/sql"
+import { describe, expect, it } from "bun:test"
 
-test("sql.build", () => {
+describe("sql", () => {
 
-    expect(sql `${rawNode("\"FOO\"")}`).toEqual("\"FOO\"")
+    const testCases : [SqlNode, string ][] = [
+        [rawNode("\"FOO\""), "\"FOO\""],
+        [refNode("FOO"), "\"FOO\""],
+        [refNode("FOO", "bar"), "\"FOO\".\"bar\""],
+        [refNode("'FOO'"), "\"'FOO'\""],
+        [refNode("\"FOO\""), "\"\"\"FOO\"\"\""],
+        [valueNode(123), "123"],
+        [valueNode("123"), "'123'"],
+        [valueNode(null), "NULL"],
+        [arrayNode([1, 2, 3]), "ARRAY[1, 2, 3]"],
+    ]
 
-    expect(sql `${refNode("FOO")}`).toEqual("\"FOO\"")
-    expect(sql `${refNode("'FOO'")}`).toEqual("\"'FOO'\"")
-    expect(sql `${refNode("\"FOO\"")}`).toEqual("\"\"\"FOO\"\"\"")
-
-    expect(sql `${valueNode(123)}`).toEqual("123")
-    expect(sql `${valueNode("123")}`).toEqual("'123'")
-    expect(sql `${valueNode(null)}`).toEqual("NULL")
-
-    expect(sql `${arrayNode([1, 2, 3])}`).toEqual("ARRAY[1, 2, 3]")
+    for( const [input, expected] of testCases) {
+        it(`${input.type}:${input.value} is expected to be ${expected}`, () => {
+            expect(sql`${input}`).toBe(expected)
+        })
+    }
 
 })

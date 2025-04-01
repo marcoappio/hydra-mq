@@ -3,52 +3,46 @@
 </div>
 <br/>
 
+**N.B. Docs are a Work in Progress. HydraMQ is NOT ready for production use. Check back later!!**
+
 A high performance Postgres message queue implementation for NodeJs/TypeScript. 
 
 Documentation available at: [hydra-mq.marcoapp.io](https://hydra-mq.marcoapp.io/).
 
 ## Features
 
-  - Zero dependencies.
-  - Scales to thousands of queues with no performance penalty.
-  - Distributes well across multiple processes/servers.
-  - Messages can be enqueued as part of existing database transactions.
+  - High throughput.
+  - Fine-grained settings for multi-tenancy concurrency and size.
   - Scheduled/repeating messages.
-  - Fine-grained per-queue settings for concurrency and capacity.
-  - Flexible message prioritization settings.
-  - Configurable message retry settings.
+  - Prioritized messages.
+  - Retryable messages with customizable timeout and back-off strategies.
+  - Delayed messages.
+  - Message dependencies/flows with cascading failures.
+  - Message enqueuing within *existing* database transactions.
   - DB client agnostic.
-  - High throughput: > 10,000 jobs per second.
+  - Zero dependencies.
 
 ## Quick Look
 
 ```typescript
-import { Deployment, type ProcessorFn } from "hydra-mq"
+import { Queue, type ProcessorFn } from "hydra-mq"
 import { Pool } from "pg"
 
 // Initialize the database client.
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 
-// Create a hydra deployment (the schema containing hydra tables).
-const deployment = new Deployment({ schema: "hydra" })
-
-// Create a group (a logical grouping of queues).
-const group = deployment.group("default")
-
-// Create a queue within said group.
-const queue = group.queue("myQueue")
+// Create a hydra queue.
+const queue = new Queue({ schema: "hydra" })
 
 // Add some messages into the queue.
 for (let i = 0; i < 500; i += 1) {
-  await queue.enqueue({ payload: `Ping: ${i}`, databaseClient: pool })
+  await queue.message.enqueue({ payload: `Ping: ${i}`, databaseClient: pool })
 }
 
-// Create a processor daemon to process messages across *all* queues within a group.
+// Create daemons to process messages.
 const processorFn : ProcessorFn = async (msg) => console.log(msg)
-group.processor({ processorFn, databaseClient: pool })
-
-// Create an orchestrator to maintain system health.
-deployment.daemon.orchestrator({ databaseClient: pool })
+queue.daemon.processor({ databaseClient: pool, processorFn })
+queue.daemon.coordinator({ databaseClient: pool })
 ```
 
 ## Setup & Installation
@@ -62,183 +56,175 @@ npm install hydra-mq
 Once the package is installed, we need to install the requisite DB machinery. HydraMQ aims to be agnostic to the DB client/migration procedure and thus provides a simple `string[]` of well-formatted SQL commands to run as part of a migration to facilitate said installation.
 
 ```typescript
-import { Deployment } from "hydra-mq"
+import { Queue } from "hydra-mq"
 
 // Choose which postgres schema in which you wish to install hydraMQ.
-const deployment = new Deployment({ schema: "hydra" })
+const queue = new Queue({ schema: "hydra" })
 
 // Run these SQL commands as part of a DB migration.
-const sqlCommands: string[] = deployment.installation()
+const sqlCommands: string[] = queue.installation()
 ```
-
 N.B. the set of SQL commands generated is **not** idempotent and thus it is strongly recommended that they are executed within a transaction.
 
-## Message Lifecycle
+## Channels
 
-Before we proceed, it would be salient to understand the lifecycle of messages that are submitted into HydraMQ queues.
-
-Messages can exist in the following states:
-
-  - `READY` - The message is available to be processed.
-  - `WAITING` - Due to queue concurrency limits, the message is not yet available for processing.
-  - `PROCESSING` - The message is currently being processed.
-  - `LOCKED` - The message is in a temporarily locked state (due to a processing failure) and won"t be re-processed for some time.
-
-When a message is enqueued, it will begin its life in the `WAITING` state if its target queue doesn"t have sufficient concurrency to process it right away, else it will be in the `READY` state.
-
-Processors will take jobs in the `READY` state and move them to the `PROCESSING` state for the duration that they are processed. 
-
-After processing, the message will either be deleted if processed successfully or if it has failed and has no retry attempts left. If processing fails but there are retry attempts left, it will transition into the `LOCKED` state.
-
-Messages in the `LOCKED` state will eventually be transitioned back to either `WAITING` or `READY` by the orchestrator, again depending on the concurrency limits of its queue.
-
-## Queues
-
-Queues can be created from a group object by calling:
+Channels provide multi-tenancy support within HydraMQ. They can be thought of us as lightweight or "micro" queues that messages are read from in a round-robin fashion (unless explicit message priorities dictates otherwise). There is no performance penalty associated with using channels, and can be assigned on a granular (per-user for example) basis to ensure fair scheduling of work. To enqueue a message within a specific channel, we simply run:
 
 ```typescript
-const queue = group.queue("myQueue")
+  await queue.channel("my-channel").message.enqueue({ payload: `Ping: ${i}`, databaseClient: pool })
+```
+ Channels can be configured to limit their max size (with messages being dropped when size limits are reached) *and* their max concurrency - ensuring _at most_ `n` jobs run globally at any one time. We do this by defining a "Channel Policy" which can be set and removed by running:
+
+```typescript
+  // N.B. null parameters mean 
+  await queue.channel("my-channel").policy.set({
+    maxSize: null,
+    maxConcurrency: 1,
+    databaseClient: pool,
+  })
+
+  await queue.channel("my-channel").policy.clear({
+    databaseClient: pool,
+  })
 ```
 
-By default, queues are completely unconstrained - meaning they can hold an unlimited number of messages and also allow an unlimited number of messages to be processed concurrently. However, we can quite easily constrain both a queue's capacity and concurrency:
+## Retyring failed messages
+
+Messages can be given a retry policy to ensure that should processing fail, messages are re-attempted at a later date. We provide the `numAttempts`, `lockSecs` and `lockSecsFactor` arguments when enqueueing a message. `numAttempts` specifies the number of times processing can be attempted on a message. `lockSecs` specifies the amount of time a message is "locked" (and unavailable for attempted re-processing) after a failure and `lockSecsFactor` specifies the factor by which `lockSecs` is multiplied each time a message is locked. 
 
 ```typescript
-// N.B. a null value means the concurrency/capacity is be unrestricted.
-await queue.config.set({
-  maxConcurrency: 5,
+await queue.message.enqueue({
+  payload: "hello world",
   databaseClient: pool,
-  maxCapacity: null,
-})
-
-// To remove any constraints on a queue
-await queue.config.clear({
-  databaseClient: pool,
+  numAttempts: 5,
+  lockSecs: 5,
+  lockSecsFactor: 2 // Double the lock time after each failure.
 })
 ```
 
-Queue concurrency limits are completely global and thus will be respected across process/server boundaries. That being said, dynamic changes to queue concurrency might not propagate instantly. For example, HydraMQ will certainly never _evict_ messages that are currently being processed if the concurrency limit is suddenly lowered!
+## Prioritizing messages
 
-## Processor Daemons
-
-Processor daemons will work to process messages across _all_ queues within a single group (respecting any queue concurrency limits).
-
-By default, the processor will process one message at a time. However, if we set the `executionConcurrency` of the processor, it will dispatch dequeued messages to a fleet of executors that can process messages concurrent with one another:
+Messages can be prioritized. This will push messages to the "front" of their respective channel - as well as override the usual round-robin fashion in which messages are dequeued from channels. Messages with no explciit priority are assumed to be of the lowest priority.
 
 ```typescript
-const processor = group.processor({ 
-  processorFn: processorFn, 
-  databaseClient: pool,
-  executionConcurrency: 10,
-})
-```
-
-This setting is useful when dealing with long running, IO-bound jobs. However, we will run into throughput limitations with short-lived jobs as even though there are multiple executors, the processor will still dequeue messages sequentially. 
-
-In this pathological scenario, it is recommended to deploy _multiple_ processors - with each processor dequeuing messages concurrently and thus affording a much greater message throughput:
-
-```typescript
-const processors = [
-  group.processor({ 
-    processorFn: processorFn, 
-    databaseClient: pool,
-    executionConcurrency: 10,
-  }),
-  group.processor({ 
-    processorFn: processorFn, 
-    databaseClient: pool,
-    executionConcurrency: 10,
-  }),
-  group.processor({ 
-    processorFn: processorFn, 
-    databaseClient: pool,
-    executionConcurrency: 10,
-  }),
-]
-```
-
-Finally, it is worth noting that HydraMQ daemons all run on a single thread. This is no problem for IO-bound work, however anything CPU intensive will cause significant performance issues. HydraMQ processors must be spread across multiple processes/servers to leverage additional CPU cores to mitigate this issue.
-
-N.B. changes to concurrency don"t propagate instantly and messages currently being procesed will certainly never be "evicted" in response to concurrency changes.
-
-## Orchestrator Daemons
-
-Orchestrator daemons maintain general system health and are essential for HydraMQ to run correctly. They perform 3 functions:
-
-  1. They enqueue scheduled messages.
-  2. They unlock messages that failed to process so they may be retried.
-  3. They sweep up _stuck_ jobs that might otherwise cause queue blockages.
-
-_At least_ one orchestrator is required. However, multiple orchestrators will play well with one another. Thus, if you need to horizontal scaling, you can simply replicate your worker process (along with the orchestrator) vs. having to create a special singleton orchestrator process as per other solutions.
-
-Orchestrators service an entire deployment and unlike Processors, are not needed per-group.
-
-## Graceful Daemon Shutdown
-
-Orchestrator and Processor daemons can be gracefully shutdown by awaiting their `stop()` method. This ensures daemons finish any tasks they are currently working on before exiting.
-
-Failure to gracefully shut down daemons (particularly processors) may result in messages being _stuck_ in an invalid `PROCESSING` state. In this state they will occupy a concurrency slot inside their queue - potentially causing blockages and reducing job throughput until the orchestrator sweeps them away.
-
-The orchestrator will consider messages _stuck_ if they have existed in a `PROCESSING` state for longer than `staleSecs` - which can be defined on a per-message basis when enqueueing. Make sure you set this value such that it is larger than any potential processing time for the given message (by default it is set to 1 hour).
-
-## Prioritized Messages
-
-Messages can be prioritized - ensuring they are processed faster than others, by setting the `priority` argument when enqueuing a message. All messages with specified priorities are processed _before_ those without an explicit priority:
-
-```typescript
-await queue.enqueue({
+await queue.message.enqueue({
   message: "hello world",
   databaseClient: pool,
   priority: 10,
 })
 ```
 
-## Retryable Messages
+## De-duplicating messages
 
-Messages can be given a retry policy to ensure that should processing fail, messages are re-attempted at a later date. We simply provide the `numAttempts` and `timeoutSecs` arguments when enqueueing a message. `numAttempts` specifies the number of times a message can be processed before being archived in a failed state. `timeoutSecs` specifies the amount of time a message is "locked" (and unavailable for attempted re-processing) after a failure.
-
-```typescript
-await queue.enqueue({
-  payload: "hello world",
-  databaseClient: pool,
-  numAttempts: 5,
-  timeoutSecs: 60 * 5,
-})
-```
-
-## De-duplicated Messages
-
-Messages can be de-duplicated by specifying a `deduplicationId` argument when enqueued. If a message with a matching `deduplicationId`, that is yet to be processed exists on the same queue, then said message (payload and message configuration) will be _updated_ vs. a new message being enqueued:
+Messages can be de-duplicated by specifying a `name` argument when enqueued. If a message exists with a matching `name`, that is yet to be processed, then no new messagee will be enqueued. Once a message has been processed (at least once), it is no longer eligible for deduplication.
 
 ```typescript
-await queue.enqueue({
+await queue.message.enqueue({
   payload: "updated hello world",
   databaseClient: pool,
-  deduplicationId: "hello"
+  name: "hello"
 })
 ```
 
-## Scheduled Messages
+## Scheduling messages
 
-Each queue can also have scheduled messages that enqueue repeatedly at fixed intervals. Scheduled messages can be set and cleared using the same arguments as we"d expect to see when enqueuing a message. An additional required argument is `cronExpr` which describes how often the message should be scheduled, using normal cron job syntax:
+Messages can be scheduled to enqueue repeatedly by specifying the enqueue parameters and a `cronExpr` argument to describe how often to perform said enqueue. Schedules have an identifying name, which can be used to update or delete the schedule:
 
 ```typescript
 await queue
-  .schedule("myScheduledMessage")
+  .message
+  .schedule("schedule-name")
   .set({
     payload: "hello world",
     databaseClient: pool,
     numAttempts: 5,
-    priority: 10,
-    timeoutSecs: 60 * 5,
     cronExpr: "0 * * * *"
   })
 
 await queue
-  .schedule("myScheduledMessage")
-  .clear({
+  .schedule("schedule-name")
+  .clear({ databaseClient: pool })
+```
+
+Schedules can also be set for a specific channel using:
+
+```typescript
+await queue
+  .channel("channel-name")
+  .message
+  .schedule("schedule-name")
+  .set({
+    payload: "hello world",
     databaseClient: pool,
+    numAttempts: 5,
+    cronExpr: "0 * * * *"
   })
 ```
+
+N.B. Schedule names are scoped to their channel, and thus both the queue-level and channel-level schedules will _not_ collide despite having the same name.
+
+## Adding dependencies to messages
+
+We can enqueue messages that run according to an arbitrary dependency DAG. We do this by providing a `dependsOn` parameter that takes an array of message ids. 
+
+Only messages in their starting state can be referenced. An attempt to "depend" on a job that has progressed will result in the enqueue failing. To prevent this from happening, it is strongly encouraged that you construct the DAG within an explicit database transaction.
+
+If any message in the DAG fails to process, its failure will transitively propagate to all of its descendents.
+
+```typescript
+const client = await pool.connect()
+try {
+    await client.query("BEGIN")
+
+    const parentMessage = queue.message.enqueue({
+        databaseClient: client,
+        payload: "parent"
+    })
+
+    if(parentMessage.resultType !== "MESSAGE_ENQUEUED") {
+        // Perhaps it was deduplicated?
+        throw new Error("Message failed to enqueue")
+    }
+
+    const childMessage = queue.message.enqueue({
+        databaseClient: client,
+        payload: "child",
+        dependsOn: [parentMessage.messageId]
+    })
+
+    await client.query("COMMIT")
+} catch {
+    await client.query("ROLLBACK")
+}finally {
+    await client.release()
+}
+```
+
+## Processors
+
+Processor daemons dequeue messages from the queue and perform work on them as per the `processorFn`. By default a processor will wait until it finishes processing a message before dequeuing another one. This behaviour can be changed by setting `executionSlots` to a number larger than `1`. Message throughput can be further increased by spawning additional processors, allowing messages to be concurrently dequeued (which happens efficiently thanks to `SKIP LOCKED`).
+
+```typescript
+const processor = deployment.daemon.processor({ 
+  processorFn: processorFn, 
+  databaseClient: pool,
+  executionSlots: 10,
+})
+```
+
+Finally, it is worth noting that HydraMQ daemons all run on a single thread. This is no problem for IO-bound work, however anything CPU intensive will cause significant performance issues. HydraMQ processors must be spread across multiple processes/servers to leverage additional CPU cores to mitigate this issue.
+
+## Coordinators
+
+At least one coordinator daemon must run to ensure HydraMQ functions correctly by processing an internal job queue - with some workloads potentially necessitating the spawning of _multiple_ coordinators to keep the job queue size reasonable.
+
+## Graceful Daemon Shutdown
+
+Coordinator and Processor daemons can be gracefully shutdown by awaiting their `stop()` method. This ensures daemons finish any tasks they are currently working on before exiting.
+
+Failure to gracefully shut down daemons (particularly processors) may result in messages being _stuck_ in an invalid `PROCESSING` state. In this state they will occupy a concurrency slot inside their queue - potentially causing blockages and reducing job throughput until the coordinator sweeps them away.
+
+The coordinator will consider messages _stuck_ if they have existed in a `PROCESSING` state for longer than `maxProcessingSecs` - which can be defined on a per-message basis when enqueueing. Make sure you set this value such that it is larger than any potential processing time for the given message (by default it is set to 1 hour).
 
 ## Other Database Clients
 
@@ -264,35 +250,22 @@ HydraMQ daemons emit the following events:
 
 | Event Type | Description |
 | ----------|-------------|
+| `MESSAGE_ENQUEUED` | A scheduled message has been enqueued by the scheduler.
+| `MESSAGE_RELEASED` | A message has been "released" for processing (it has no outstanding dependencies and any initial delay has elapsed) by the scheduler. |
+| `MESSAGE_DROPPED` | A message has been dropped due to its channel's max size constraint being violated. |
 | `MESSAGE_DEQUEUED` | A message has been dequeued for processing. |
-| `MESSAGE_PROCESSED` | A message has been successfully processed and was removed from the queue. |
-| `MESSAGE_EXPIRED` | A message has failed to process and was removed from the queue. |
-| `MESSAGE_LOCKED` | A message has failed to process - but will eventually be re-processed. |
-| `MESSAGE_SCHEDULED` | A scheduled message has been enqueued. |
-| `MESSAGE_UNLOCKED` | A previously locked message has been unlocked for re-processing. |
-| `MESSAGE_CLEANED` | A message stuck in the "running" state has been cleaned. |
+| `MESSAGE_PROCESSED_SUCCESS` | Attempted processing of a message has succeeded. |
+| `MESSAGE_PROCESSED_FAIL` | Attempted processing of a message has failed. |
+| `MESSAGE_LOCKED` | Due to a processing failure, a message has been temporarily moved to a "locked" state to prevent further reprocessing. |
+| `MESSAGE_UNLOCKED` | A previously locked message has been unlocked and is now again ready for attempted processing. |
+| `MESSAGE_FINALIZED` | A message has transitioned to a post-processing state awaiting deletion. |
+| `MESSAGE_DELETED` | A message has been truly deleted from the database. |
+| `MESSAGE_DEPENDENCY_RESOLGVED` | A message's dependency has resolved (either a success or fail). |
+| `MESSAGE_DEPENDENCIES_UNMET` | A dequeued message will not be processed due to a failure of one of its parents.
+| `MESSAGE_ATTEMPTS_EXHAUSTED` | A dequeued message will not be processed as there are no attempts remaining.
 
-These events can be subscribed to by passing an event handler during daemon construction:
+These events can be subscribed to by passing an event handler to the queue:
 
 ```typescript
-// Creating a processor with an event handler
-const processor = group.processor({ 
-    processorFn: processorFn, 
-    eventHandler: (ev) => console.log(ev),
-    databaseClient: pool,
-})
-
-// Creating an orchestrator with an event handler
-const orchestrator = deployment.orchestrator({
-    eventHandler: (ev) => console.log(ev),
-    databaseClient: pool,
-})
+queue.daemon.onEvent(ev => console.log(ev))
 ```
-
-## Polling & Responsiveness
-
-HydraMQ uses polling as its central mechanism for transitioning and processing messages. 
-
-As a result, responsiveness can sometimes suffer with enqueued jobs not _immediately_ being picked up for processing due to processors being in a "timeout" period after previously finding no messages to process. 
-
-We also see this lack of responsiveness with jobs not being unlocked immediately after their timeout period expires (for similar reasons).
