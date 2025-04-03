@@ -1,3 +1,15 @@
+# v0.3.0 (Tue Mar 18 2025)
+
+#### 🚀 Enhancement
+
+- Groups! [#14](https://github.com/marcoappio/hydra-mq/pull/14) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.2.10 (Mon Mar 17 2025)
 
 #### 🐛 Bug Fix

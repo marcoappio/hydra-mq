@@ -1,6 +1,6 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { sql } from '@src/core/sql'
-import { ResultCode } from '@src/driver/result-code'
+import type { DatabaseClient } from "@src/core/database-client"
+import { refNode, sql, valueNode } from "@src/core/sql"
+import { ResultCode } from "@src/driver/result-code"
 
 type QueryResultMessageNotFound = {
     o_result_code: ResultCode.MESSAGE_NOT_FOUND
@@ -11,11 +11,11 @@ type QueryResultMessageLocked = {
 }
 
 type DriveResultMessageLocked = {
-    resultType: 'MESSAGE_LOCKED'
+    resultType: "MESSAGE_LOCKED"
 }
 
 type DriverResultMessageNotFound = {
-    resultType: 'MESSAGE_NOT_FOUND'
+    resultType: "MESSAGE_NOT_FOUND"
 }
 
 type DriverResult =
@@ -31,16 +31,16 @@ export const messageLock = async (params: {
     messageId: string
     schema: string
 }): Promise<DriverResult> => {
-    const result = await params.databaseClient.query(sql.build `
-        SELECT * FROM ${sql.ref(params.schema)}.message_lock(
-            ${sql.value(params.messageId)}
+    const result = await params.databaseClient.query(sql `
+        SELECT * FROM ${refNode(params.schema)}.message_lock(
+            ${valueNode(params.messageId)}
         )
     `).then(res => res.rows[0]) as QueryResult
     if (result.o_result_code === ResultCode.MESSAGE_NOT_FOUND) {
-        return { resultType: 'MESSAGE_NOT_FOUND' }
+        return { resultType: "MESSAGE_NOT_FOUND" }
     } else if (result.o_result_code === ResultCode.MESSAGE_LOCKED) {
-        return { resultType: 'MESSAGE_LOCKED' }
+        return { resultType: "MESSAGE_LOCKED" }
     } else {
-        throw new Error('Unexpected result code')
+        throw new Error("Unexpected result code")
     }
 }

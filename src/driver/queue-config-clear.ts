@@ -1,14 +1,16 @@
-import type { DatabaseClient } from '@src/core/database-client'
-import { sql } from '@src/core/sql'
+import type { DatabaseClient } from "@src/core/database-client"
+import { refNode, sql, valueNode } from "@src/core/sql"
 
 export const queueConfigClear = async (params: {
     databaseClient: DatabaseClient
+    groupId: string
     queueId: string
     schema: string
 }) => {
-    await params.databaseClient.query(sql.build `
-        SELECT * FROM ${sql.ref(params.schema)}.queue_remove(
-            ${sql.value(params.queueId)}
+    await params.databaseClient.query(sql `
+        SELECT * FROM ${refNode(params.schema)}.queue_remove(
+            ${valueNode(params.groupId)},
+            ${valueNode(params.queueId)}
         )
     `)
 }

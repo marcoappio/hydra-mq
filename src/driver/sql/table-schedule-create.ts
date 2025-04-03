@@ -1,12 +1,13 @@
-import { type SqlRefNode, sql } from '@src/core/sql'
+import { type SqlRefNode, sql } from "@src/core/sql"
 
 export const tableScheduleCreateSql = (params: {
     schema: SqlRefNode
 }) => [
-    sql.build `
+    sql `
         CREATE TABLE ${params.schema}.schedule (
-            id TEXT NOT NULL,
+            group_id TEXT NOT NULL,
             queue_id TEXT NOT NULL,
+            schedule_id TEXT NOT NULL,
             payload TEXT NOT NULL,
             priority INTEGER,
             timeout_secs INTEGER NOT NULL,
@@ -21,14 +22,14 @@ export const tableScheduleCreateSql = (params: {
             cron_expr_days_of_week INTEGER[] NOT NULL,
             created_at TIMESTAMP NOT NULL,
             updated_at TIMESTAMP NOT NULL,
-            PRIMARY KEY (id, queue_id)
+            PRIMARY KEY (group_id, queue_id, schedule_id)
         );
     `,
 
-    sql.build `
+    sql `
         CREATE INDEX schedule_dequeue_ix
         ON ${params.schema}.schedule (
-            cron_last_mins ASC NULLS FIRST
+            cron_last_mins ASC
         );
     `,
 ]
