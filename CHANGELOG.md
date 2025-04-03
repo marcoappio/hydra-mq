@@ -1,3 +1,15 @@
+# v0.3.1 (Thu Apr 03 2025)
+
+#### 🐛 Bug Fix
+
+- [HYDR-14] Update LICENSE.txt [#13](https://github.com/marcoappio/hydra-mq/pull/13) ([@isaachinman](https://github.com/isaachinman))
+
+#### Authors: 1
+
+- Isaac Hinman ([@isaachinman](https://github.com/isaachinman))
+
+---
+
 # v0.3.0 (Tue Mar 18 2025)
 
 #### 🚀 Enhancement
