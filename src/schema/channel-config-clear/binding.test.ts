@@ -37,7 +37,6 @@ describe("channelPolicyClear", async () => {
             schema: "test",
             name: "foobar",
             maxConcurrency: 1,
-            maxSize: 1,
         })
 
         let result = await pool.query(sql `
@@ -66,7 +65,6 @@ describe("channelPolicyClear", async () => {
             schema: "test",
             name: "foobar",
             maxConcurrency: 1,
-            maxSize: 1,
         })
 
         let result = await pool.query(sql `

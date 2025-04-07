@@ -7,7 +7,6 @@ export const channelPolicyInstall = (params: {
         CREATE TABLE ${params.schema}.channel_policy (
             id UUID NOT NULL DEFAULT GEN_RANDOM_UUID(),
             name TEXT NOT NULL,
-            max_size INTEGER,
             max_concurrency INTEGER,
             PRIMARY KEY (id)
         );

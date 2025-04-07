@@ -14,7 +14,6 @@ export const channelPolicyClearInstall = (params: {
                 WHERE name = p_name;
 
                 UPDATE ${params.schema}.channel_state SET
-                    max_size = ${valueNode(null)},
                     max_concurrency = ${valueNode(null)}
                 WHERE name = p_name;
             END;

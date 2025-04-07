@@ -17,12 +17,10 @@ export class ChannelPolicyModule {
 
     async set(params: {
         databaseClient: DatabaseClient
-        maxSize: number | null
         maxConcurrency: number | null
     }) {
         return channelPolicySet({
             databaseClient: params.databaseClient,
-            maxSize: params.maxSize,
             maxConcurrency: params.maxConcurrency,
             name: this.channel,
             schema: this.schema,

@@ -78,7 +78,6 @@ Channels provide multi-tenancy support within HydraMQ. They can be thought of us
 ```typescript
   // N.B. null parameters mean 
   await queue.channel("my-channel").policy.set({
-    maxSize: null,
     maxConcurrency: 1,
     databaseClient: pool,
   })

@@ -135,7 +135,6 @@ describe("messageDequeue", async () => {
             schema: "test",
             name: messageParams.channelName,
             maxConcurrency: 1,
-            maxSize: null
         })
 
         const enqueued = [
