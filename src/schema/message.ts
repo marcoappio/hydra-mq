@@ -31,7 +31,6 @@ export const messageInstall = (params: {
             created_at TIMESTAMP,
             waiting_at TIMESTAMP,
             locked_at TIMESTAMP,
-            finalized_at TIMESTAMP,
             PRIMARY KEY (id)
         );
     `,

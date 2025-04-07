@@ -22,15 +22,15 @@ export const messageFinalizeInstall = (params: {
                 v_now TIMESTAMP;
                 v_message RECORD;
                 v_channel_state RECORD;
+                v_message_dependency RECORD;
             BEGIN
                 v_now := NOW();
 
-                UPDATE ${params.schema}.message SET
-                    status = ${valueNode(MessageStatus.FINALIZED)},
-                    finalized_at = v_now
+                SELECT channel_name
+                FROM ${params.schema}.message
                 WHERE id = p_id
                 AND status = ${valueNode(MessageStatus.PROCESSING)}
-                RETURNING channel_name
+                FOR UPDATE
                 INTO v_message;
 
                 IF v_message IS NULL THEN
@@ -50,10 +50,19 @@ export const messageFinalizeInstall = (params: {
                     WHERE name = v_message.channel_name;
                 END IF;
 
-                PERFORM ${params.schema}.job_message_delete_enqueue(
-                    p_id,
-                    p_is_success
-                );
+                FOR v_message_dependency IN
+                    DELETE FROM ${params.schema}.message_dependency 
+                    WHERE parent_message_id = p_id
+                    RETURNING child_message_id
+                LOOP
+                    PERFORM ${params.schema}.job_message_dependency_resolve_enqueue(
+                        v_message_dependency.child_message_id,
+                        p_is_success
+                    );
+                END LOOP;
+
+                DELETE FROM ${params.schema}.message
+                WHERE id = p_id;
 
                 RETURN QUERY SELECT ${valueNode(MessageFinalizeResultCode.MESSAGE_FINALIZED)};
             END;

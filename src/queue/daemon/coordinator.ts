@@ -59,29 +59,11 @@ export class DaemonCoordinator {
                 } else {
                     throw new Error(`Unexpected job result: ${result.jobResult.resultType}`)
                 }
-            } else if(result.resultType === "JOB_MESSAGE_DELETE_PROCESSED") {
-                if(result.jobResult.resultType === "MESSAGE_DELETED") {
-                    this.eventHandler({
-                        daemonId: this.daemonId,
-                        eventType: "MESSAGE_DELETED",
-                        messageId: result.messageId,
-                        jobId: result.id,
-                    })
-                } else {
-                    throw new Error(`Unexpected job result: ${result.jobResult.resultType}`)
-                }
             } else if(result.resultType === "JOB_MESSAGE_RELEASE_PROCESSED") {
                 if(result.jobResult.resultType === "MESSAGE_RELEASED") {
                     this.eventHandler({
                         daemonId: this.daemonId,
                         eventType: "MESSAGE_RELEASED",
-                        messageId: result.messageId,
-                        jobId: result.id,
-                    })
-                } else if(result.jobResult.resultType === "MESSAGE_DROPPED") {
-                    this.eventHandler({
-                        daemonId: this.daemonId,
-                        eventType: "MESSAGE_DROPPED",
                         messageId: result.messageId,
                         jobId: result.id,
                     })

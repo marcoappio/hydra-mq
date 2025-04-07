@@ -14,13 +14,6 @@ export type HydraEventMessageReleased = {
     messageId: string
 }
 
-export type HydraEventMessageDropped = {
-    daemonId: string | null
-    eventType: "MESSAGE_DROPPED"
-    jobId: string
-    messageId: string
-}
-
 export type HydraEventMessageDequeued = {
     daemonId: string | null
     eventType: "MESSAGE_DEQUEUED"
@@ -79,17 +72,9 @@ export type HydraEventMessageDependencyResolved = {
     messageId: string
 }
 
-export type HydraEventMessageDeleted = {
-    daemonId: string | null
-    eventType: "MESSAGE_DELETED"
-    jobId: string
-    messageId: string
-}
-
 export type HydraEvent =
     | HydraEventMessageEnqueued
     | HydraEventMessageReleased
-    | HydraEventMessageDropped
     | HydraEventMessageDequeued
     | HydraEventMessageProcessedSuccess
     | HydraEventMessageProcessedFail
@@ -97,7 +82,6 @@ export type HydraEvent =
     | HydraEventMessageUnlocked
     | HydraEventMessageFinalized
     | HydraEventMessageDependencyResolved
-    | HydraEventMessageDeleted
     | HydraEventMessageDependenciesUnmet
     | HydraEventMessageAttemptsExhausted
 
