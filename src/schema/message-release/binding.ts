@@ -12,17 +12,12 @@ export type MessageReleaseResultMessageReleased = {
     resultType: "MESSAGE_RELEASED"
 }
 
-export type MessageReleaseResultMessageDropped = {
-    resultType: "MESSAGE_DROPPED"
-}
-
 export type MessageReleaseResultMessageNotFound = {
     resultType: "MESSAGE_NOT_FOUND"
 }
 
 export type MessageReleaseResult =
     | MessageReleaseResultMessageReleased
-    | MessageReleaseResultMessageDropped
     | MessageReleaseResultMessageNotFound
 
 export const messageReleaseParseQueryResult = (result: QueryResult): MessageReleaseResult => {

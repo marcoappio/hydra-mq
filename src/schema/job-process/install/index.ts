@@ -89,23 +89,6 @@ export const jobProcessInstall = (params : {
                         v_result.o_result_code,
                         v_params.message_id
                     FROM ${params.schema}.message_unlock(v_params.message_id) AS v_result;
-                ELSIF v_job.type = ${valueNode(JobType.MESSAGE_DELETE)} THEN
-                    SELECT message_id, is_success
-                    FROM ${params.schema}.job_message_delete_params
-                    WHERE job_id = v_job.id
-                    INTO v_params;
-
-                    RETURN QUERY SELECT 
-                        ${valueNode(JobProcessResultCode.JOB_PROCESSED)}, 
-                        v_job.id, 
-                        v_job.type, 
-                        v_job.name, 
-                        v_result.o_result_code,
-                        v_params.message_id
-                    FROM ${params.schema}.message_delete(
-                        v_params.message_id,
-                        v_params.is_success
-                    ) AS v_result;
                 ELSIF v_job.type = ${valueNode(JobType.MESSAGE_ENQUEUE)} THEN
                     SELECT
                         name,

@@ -3,7 +3,6 @@ import { sql, type SqlRefNode } from "@src/core/sql"
 export enum JobType {
     MESSAGE_RELEASE,
     MESSAGE_UNLOCK,
-    MESSAGE_DELETE,
     MESSAGE_ENQUEUE,
     MESSAGE_DEPENDENCY_RESOLVE
 }

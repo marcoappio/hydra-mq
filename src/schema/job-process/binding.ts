@@ -2,8 +2,6 @@ import type { DatabaseClient } from "@src/core/database-client"
 import { refNode, sql } from "@src/core/sql"
 import { JobType } from "@src/schema/job"
 import { JobProcessResultCode } from "@src/schema/job-process/install"
-import { messageDeleteParseQueryResult, type MessageDeleteResult } from "@src/schema/message-delete/binding"
-import { MessageDeleteResultCode } from "@src/schema/message-delete/install"
 import { messageDependencyResolveParseQueryResult, type MessageDependencyResolveResult } from "@src/schema/message-dependency-resolve/binding"
 import type { MessageDependencyResolveResultCode } from "@src/schema/message-dependency-resolve/install"
 import { messageEnqueueParseQueryResult, type MessageEnqueueResult } from "@src/schema/message-enqueue/binding"
@@ -20,15 +18,6 @@ type QueryResultQueueEmpty = {
     o_result_code: JobProcessResultCode.QUEUE_EMPTY
     o_job_result_code: null
     o_job_message_id: null
-}
-
-type QueryResultJobMessageDeleteProcessed = {
-    o_id: string
-    o_type: JobType.MESSAGE_DELETE
-    o_name: string
-    o_result_code: JobProcessResultCode.JOB_PROCESSED
-    o_job_result_code: MessageDeleteResultCode
-    o_job_message_id: string
 }
 
 type QueryResultJobMessageReleaseProcessed = {
@@ -81,7 +70,6 @@ type QueryResultJobMessageEnqueueProcessedMessageDependencyNotFound = {
 type QueryResult =
     | QueryResultQueueEmpty
     | QueryResultJobMessageDependencyResolveProcessed
-    | QueryResultJobMessageDeleteProcessed
     | QueryResultJobMessageReleaseProcessed
     | QueryResultJobMessageUnlockProcessed
     | QueryResultJobMessageEnqueueProcessedMessageReturned
@@ -89,13 +77,6 @@ type QueryResult =
 
 type ResultQueueEmpty = {
     resultType: "QUEUE_EMPTY"
-}
-
-type ResultJobMessageDeleteProcessed = {
-    id: string
-    resultType: "JOB_MESSAGE_DELETE_PROCESSED"
-    messageId: string
-    jobResult: MessageDeleteResult
 }
 
 type ResultJobMessageReleaseProcessed = {
@@ -127,7 +108,6 @@ type ResultJobMessageEnqueueProcessed = {
 
 export type JobProcessResult = 
     | ResultQueueEmpty
-    | ResultJobMessageDeleteProcessed
     | ResultJobMessageReleaseProcessed
     | ResultJobMessageUnlockProcessed
     | ResultJobMessageEnqueueProcessed
@@ -136,13 +116,6 @@ export type JobProcessResult =
 export const jobProcessParseQueryResult = (result: QueryResult): JobProcessResult => {
     if(result.o_result_code === JobProcessResultCode.QUEUE_EMPTY) {
         return { resultType: "QUEUE_EMPTY" }
-    } else if(result.o_type === JobType.MESSAGE_DELETE) {
-        return {
-            id: result.o_id,
-            resultType: "JOB_MESSAGE_DELETE_PROCESSED",
-            jobResult: messageDeleteParseQueryResult({ o_result_code: result.o_job_result_code }),
-            messageId: result.o_job_message_id,
-        }
     } else if(result.o_type === JobType.MESSAGE_ENQUEUE) {
         if(result.o_job_result_code === MessageEnqueueResultCode.MESSAGE_DEPENDENCY_NOT_FOUND) {
             return {

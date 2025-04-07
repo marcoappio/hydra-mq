@@ -12,7 +12,6 @@ import { jobMessageReleaseEnqueueInstall } from "@src/schema/job-message-release
 import { messageReleaseInstall } from "@src/schema/message-release/install"
 import { channelPolicySetInstall } from "@src/schema/channel-policy-set/install"
 import { jobMessageDeleteParamsInstall } from "@src/schema/job-message-delete-params"
-import { jobMessageDeleteEnqueueInstall } from "@src/schema/job-message-delete-enqueue"
 import { jobMessageUnlockParamsInstall } from "@src/schema/job-message-unlock-params"
 import { jobMessageUnlockEnqueueInstall } from "@src/schema/job-message-unlock-enqueue"
 import { messageUnlockInstall } from "@src/schema/message-unlock/install"
@@ -21,7 +20,6 @@ import { cronNextInstall } from "@src/schema/cron-next/install"
 import { messageLockInstall } from "@src/schema/message-lock/install"
 import { messageDequeueInstall } from "@src/schema/message-dequeue/install"
 import { channelPolicyClearInstall } from "@src/schema/channel-config-clear/install"
-import { messageDeleteInstall } from "@src/schema/message-delete/install"
 import { jobProcessInstall } from "@src/schema/job-process/install"
 import { jobMessageEnqueueScheduleClearInstall } from "@src/schema/job-message-enqueue-schedule-clear/install"
 import { jobMessageEnqueueScheduleSetInstall } from "@src/schema/job-message-enqueue-schedule-set/install"
@@ -79,7 +77,6 @@ export class Queue {
             ...messageLockInstall({ schema }),
             ...messageReleaseInstall({ schema }),
             ...messageUnlockInstall({ schema }),
-            ...messageDeleteInstall({ schema }),
 
             // Channel functions
             ...channelPolicySetInstall({ schema }),
@@ -89,7 +86,6 @@ export class Queue {
             ...jobMessageEnqueueScheduleClearInstall({ schema }),
             ...jobMessageEnqueueScheduleSetInstall({ schema }),
             ...jobMessageReleaseEnqueueInstall({ schema }),
-            ...jobMessageDeleteEnqueueInstall({ schema }),
             ...jobMessageDependencyResolveEnqueueInstall({ schema }),
             ...jobMessageUnlockEnqueueInstall({ schema }),
             ...jobProcessInstall({ schema }),
