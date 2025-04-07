@@ -31,6 +31,7 @@ const testMessageParams = {
     lockSecsFactor: 2,
     delaySecs: 0,
     dependsOn: [],
+    dependencyFailureCascade: true,
 }
 
 describe("messageLock", async () => {

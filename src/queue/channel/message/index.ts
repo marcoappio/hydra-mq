@@ -1,4 +1,4 @@
-import { MESSAGE_DEFAULT_NUM_ATTEMPTS, MESSAGE_DEFAULT_PRIORITY, MESSAGE_DEFAULT_PROCESSING_SECS, MESSAGE_DEFAULT_LOCK_SECS, MESSAGE_DEFAULT_LOCK_SECS_FACTOR, MESSAGE_DEFAULT_DELAY_SECS, MESSAGE_DEFAULT_NAME } from "@src/core/config"
+import { MESSAGE_DEFAULT_NUM_ATTEMPTS, MESSAGE_DEFAULT_PRIORITY, MESSAGE_DEFAULT_PROCESSING_SECS, MESSAGE_DEFAULT_LOCK_SECS, MESSAGE_DEFAULT_LOCK_SECS_FACTOR, MESSAGE_DEFAULT_DELAY_SECS, MESSAGE_DEFAULT_NAME, MESSAGE_DEFAULT_DEPENDENCY_FAILURE_CASCADE } from "@src/core/config"
 import type { DatabaseClient } from "@src/core/database-client"
 import { messageEnqueue } from "@src/schema/message-enqueue/binding"
 import { MessageScheduleModule } from "@src/queue/channel/message/schedule"
@@ -33,7 +33,8 @@ export class ChannelMessageModule {
         lockSecs?: number
         lockSecsFactor?: number
         delaySecs?: number,
-        dependsOn?: string[]
+        dependsOn?: string[],
+        dependencyFailureCascade?: boolean
     }) {
         return messageEnqueue({
             databaseClient: params.databaseClient,
@@ -48,6 +49,7 @@ export class ChannelMessageModule {
             delaySecs: params.delaySecs ?? MESSAGE_DEFAULT_DELAY_SECS,
             maxProcessingSecs: MESSAGE_DEFAULT_PROCESSING_SECS,
             dependsOn: params.dependsOn ?? [],
+            dependencyFailureCascade: params.dependencyFailureCascade ?? MESSAGE_DEFAULT_DEPENDENCY_FAILURE_CASCADE,
         })
     }
 

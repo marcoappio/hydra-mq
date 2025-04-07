@@ -9,6 +9,7 @@ type QueryResultQueueEmpty = {
     o_payload: null
     o_result_code: MessageDequeueResultCode.QUEUE_EMPTY
     o_num_dependencies_failed: null
+    o_dependency_failure_cascade: null
 }
 
 type QueryResultMessageDequeued = {
@@ -17,7 +18,8 @@ type QueryResultMessageDequeued = {
     o_num_attempts: number
     o_payload: string
     o_result_code: MessageDequeueResultCode.MESSAGE_DEQUEUED
-    o_num_dependencies_failed: null
+    o_num_dependencies_failed: number
+    o_dependency_failure_cascade: boolean
 }
 
 type QueryResult =
@@ -55,7 +57,7 @@ export const messageDequeueParseQueryResult = (result: QueryResult): MessageDequ
                 channelName: result.o_channel_name,
                 numAttempts: result.o_num_attempts,
                 payload: result.o_payload,
-                isDependenciesMet: result.o_num_dependencies_failed === 0,
+                isDependenciesMet: result.o_num_dependencies_failed ===  0 || !result.o_dependency_failure_cascade,
             },
             resultType: "MESSAGE_DEQUEUED",
         }

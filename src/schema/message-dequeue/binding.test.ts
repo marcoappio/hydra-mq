@@ -2,10 +2,11 @@ import { Queue } from "@src/queue"
 import { beforeEach, describe, expect, it } from "bun:test"
 import { Pool } from "pg"
 import { messageEnqueue, type MessageEnqueueResultMessageEnqueued } from "@src/schema/message-enqueue/binding"
-import { messageRelease } from "@src/schema/message-release/binding"
+import { messageRelease, type MessageReleaseResultMessageReleased } from "@src/schema/message-release/binding"
 import { sql, valueNode } from "@src/core/sql"
 import { channelPolicySet } from "@src/schema/channel-policy-set/binding"
 import { messageDequeue, type MessageDequeueResultMessageDequeued } from "@src/schema/message-dequeue/binding"
+import { messageDependencyResolve, type MessageDependencyResolveResultMessageDependencyResolved } from "@src/schema/message-dependency-resolve/binding"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
@@ -29,6 +30,7 @@ const messageParams = {
     lockSecsFactor: 2,
     delaySecs: 0,
     dependsOn: [],
+    dependencyFailureCascade: true,
 }
 
 describe("messageDequeue", async () => {
@@ -175,6 +177,65 @@ describe("messageDequeue", async () => {
         expect(secondResult.resultType).toBe("QUEUE_EMPTY")
 
     })
+
+    for(const dependencyFailureCascade of [true, false]) {
+        it(`correctly reports on dependency status with dependencyFailureCascade:${dependencyFailureCascade}`, async () => {
+            const firstEnqueueResult = await messageEnqueue({
+                ...messageParams,
+                databaseClient: pool,
+                schema: "test",
+                payload: "1",
+            }) as MessageEnqueueResultMessageEnqueued
+
+            expect(firstEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+            const secondEnqueueResult = await messageEnqueue({
+                ...messageParams,
+                databaseClient: pool,
+                schema: "test",
+                payload: "2",
+                dependsOn: [firstEnqueueResult.messageId],
+                dependencyFailureCascade: dependencyFailureCascade
+            }) as MessageEnqueueResultMessageEnqueued
+            expect(secondEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+
+            const firstReleaseResult = await messageRelease({
+                databaseClient: pool,
+                schema: "test",
+                id: firstEnqueueResult.messageId,
+            }) as MessageReleaseResultMessageReleased
+            expect(firstReleaseResult.resultType).toBe("MESSAGE_RELEASED")
+
+            const firstDequeueResult = await messageDequeue({
+                databaseClient: pool,
+                schema: "test",
+            }) as MessageDequeueResultMessageDequeued
+            expect(firstDequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
+            expect(firstDequeueResult.message.id).toBe(firstEnqueueResult.messageId)
+
+            const firstResolveResult = await messageDependencyResolve({
+                databaseClient: pool,
+                schema: "test",
+                id: secondEnqueueResult.messageId,
+                isSuccess: false
+            }) as MessageDependencyResolveResultMessageDependencyResolved
+            expect(firstResolveResult.resultType).toBe("MESSAGE_DEPENDENCY_RESOLVED")
+
+            const secondReleaseResult = await messageRelease({
+                databaseClient: pool,
+                schema: "test",
+                id: secondEnqueueResult.messageId,
+            }) as MessageReleaseResultMessageReleased
+            expect(secondReleaseResult.resultType).toBe("MESSAGE_RELEASED")
+
+            const secondDequeueResult = await messageDequeue({
+                databaseClient: pool,
+                schema: "test",
+            }) as MessageDequeueResultMessageDequeued
+            expect(secondDequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
+            expect(secondDequeueResult.message.id).toBe(secondEnqueueResult.messageId)
+            expect(secondDequeueResult.message.isDependenciesMet).toBe(!dependencyFailureCascade)
+        })
+    }
 
 })
 

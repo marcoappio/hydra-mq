@@ -28,6 +28,7 @@ const messageParams = {
     lockSecsFactor: 2,
     dependsOn: [],
     delaySecs: 30,
+    dependencyFailureCascade: true,
 }
 
 describe("channelPolicySet", async () => {
