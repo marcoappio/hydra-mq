@@ -3,7 +3,6 @@ import { MessageStatus } from "@src/schema/message"
 
 export enum MessageReleaseResultCode {
     MESSAGE_NOT_FOUND,
-    MESSAGE_DROPPED,
     MESSAGE_RELEASED
 }
 
@@ -41,16 +40,11 @@ export const messageReleaseInstall = (params: {
                 END IF;
 
                 SELECT
-                    max_size,
                     max_concurrency
                 FROM ${params.schema}.channel_policy
                 WHERE name = v_message.channel_name
                 FOR SHARE
                 INTO v_channel_policy;
-
-                IF v_channel_policy.max_size IS NOT NULL THEN
-                    v_channel_policy.max_size := GREATEST(v_channel_policy.max_size, 1);
-                END IF;
 
                 IF v_channel_policy.max_concurrency IS NOT NULL THEN
                     v_channel_policy.max_concurrency := GREATEST(v_channel_policy.max_concurrency, 1);
@@ -58,7 +52,6 @@ export const messageReleaseInstall = (params: {
 
                 INSERT INTO ${params.schema}.channel_state (
                     name,
-                    max_size,
                     max_concurrency,
                     current_size,
                     current_concurrency,
@@ -66,7 +59,6 @@ export const messageReleaseInstall = (params: {
                     next_priority
                 ) VALUES (
                     v_message.channel_name,
-                    v_channel_policy.max_size,
                     v_channel_policy.max_concurrency,
                     ${valueNode(0)},
                     ${valueNode(0)},
@@ -76,17 +68,6 @@ export const messageReleaseInstall = (params: {
                     id = ${params.schema}.channel_state.id
                 RETURNING current_size
                 INTO v_channel_state;
-
-                IF v_channel_state.current_size >= v_channel_policy.max_size THEN 
-                    PERFORM ${params.schema}.job_message_delete_enqueue(
-                        p_id,
-                        ${valueNode(false)}
-                    );
-
-                    RETURN QUERY SELECT 
-                        ${valueNode(MessageReleaseResultCode.MESSAGE_DROPPED)};
-                    RETURN;
-                END IF;
 
                 UPDATE ${params.schema}.message SET
                     status = ${valueNode(MessageStatus.WAITING)},

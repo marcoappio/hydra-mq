@@ -3,7 +3,6 @@ import { refNode, sql, valueNode } from "@src/core/sql"
 
 export const channelPolicySet = async (params: {
     databaseClient: DatabaseClient
-    maxSize: number | null
     maxConcurrency: number | null
     name: string
     schema: string
@@ -11,8 +10,7 @@ export const channelPolicySet = async (params: {
     await params.databaseClient.query(sql `
         SELECT * FROM ${refNode(params.schema)}.channel_policy_set(
             ${valueNode(params.name)},
-            ${valueNode(params.maxConcurrency)},
-            ${valueNode(params.maxSize)}
+            ${valueNode(params.maxConcurrency)}
         )
     `)
 }

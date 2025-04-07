@@ -5,7 +5,6 @@ import { MessageReleaseResultCode } from "@src/schema/message-release/install"
 type QueryResult = {
     o_result_code: 
         | MessageReleaseResultCode.MESSAGE_NOT_FOUND
-        | MessageReleaseResultCode.MESSAGE_DROPPED
         | MessageReleaseResultCode.MESSAGE_RELEASED
 }
 
@@ -29,8 +28,6 @@ export type MessageReleaseResult =
 export const messageReleaseParseQueryResult = (result: QueryResult): MessageReleaseResult => {
     if(result.o_result_code === MessageReleaseResultCode.MESSAGE_NOT_FOUND) {
         return { resultType: "MESSAGE_NOT_FOUND" }
-    } else if(result.o_result_code === MessageReleaseResultCode.MESSAGE_DROPPED) {
-        return { resultType: "MESSAGE_DROPPED" }
     } else if(result.o_result_code === MessageReleaseResultCode.MESSAGE_RELEASED) {
         return { resultType: "MESSAGE_RELEASED" }
     } else {

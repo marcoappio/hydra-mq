@@ -39,7 +39,6 @@ describe("channelPolicySet", async () => {
             schema: "test",
             name: "foobar",
             maxConcurrency: null,
-            maxSize: null
         })
 
         const result = await pool.query(sql `
@@ -48,7 +47,6 @@ describe("channelPolicySet", async () => {
 
         expect(result.rows.length).toBe(1)
         expect(result.rows[0].max_concurrency).toBeNull()
-        expect(result.rows[0].max_size).toBeNull()
     })
 
     it("correctly sets invalid policy parameters", async () => {
@@ -57,7 +55,6 @@ describe("channelPolicySet", async () => {
             schema: "test",
             name: "foobar",
             maxConcurrency: 0,
-            maxSize: -1
         })
 
         const result = await pool.query(sql `
@@ -66,7 +63,6 @@ describe("channelPolicySet", async () => {
 
         expect(result.rows.length).toBe(1)
         expect(result.rows[0].max_concurrency).toBe(1)
-        expect(result.rows[0].max_size).toBe(1)
     })
 
     it("correctly overwrites policy parameters", async () => {
@@ -75,7 +71,6 @@ describe("channelPolicySet", async () => {
             schema: "test",
             name: "foobar",
             maxConcurrency: 1,
-            maxSize: 1
         })
 
         await channelPolicySet({ 
@@ -83,7 +78,6 @@ describe("channelPolicySet", async () => {
             schema: "test",
             name: "foobar",
             maxConcurrency: null,
-            maxSize: null
         })
 
         const result = await pool.query(sql `
@@ -92,7 +86,6 @@ describe("channelPolicySet", async () => {
 
         expect(result.rows.length).toBe(1)
         expect(result.rows[0].max_concurrency).toBeNull()
-        expect(result.rows[0].max_size).toBeNull()
 
     })
 
@@ -115,7 +108,6 @@ describe("channelPolicySet", async () => {
 
         expect(initialState).toMatchObject({
             max_concurrency: null,
-            max_size: null,
         })
 
         await channelPolicySet({ 
@@ -123,7 +115,6 @@ describe("channelPolicySet", async () => {
             schema: "test",
             name: "foobar",
             maxConcurrency: 1,
-            maxSize: 2
         })
 
         const finalState = await pool.query(sql `
@@ -132,7 +123,6 @@ describe("channelPolicySet", async () => {
 
         expect(finalState).toMatchObject({
             max_concurrency: 1,
-            max_size: 2,
         })
 
     })
