@@ -46,6 +46,82 @@ describe("messageFinalize", async () => {
         expect(result.resultType).toBe("MESSAGE_NOT_FOUND")
     })
 
+    it("updates channel state correctly", async () => {
+        const firstEnqueueResult = await messageEnqueue({
+            databaseClient: pool,
+            schema: "test",
+            ... messageParams,
+        }) as MessageEnqueueResultMessageEnqueued
+        expect(firstEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+
+        const secondEnqueueResult = await messageEnqueue({
+            databaseClient: pool,
+            schema: "test",
+            ... messageParams,
+            dependsOn: [firstEnqueueResult.messageId]
+        }) as MessageEnqueueResultMessageEnqueued
+        expect(firstEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+
+        const firstReleaseResult = await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: firstEnqueueResult.messageId,
+        }) as MessageReleaseResult
+        expect(firstReleaseResult.resultType).toBe("MESSAGE_RELEASED")
+
+        const secondReleaseResult = await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: secondEnqueueResult.messageId,
+        }) as MessageReleaseResult
+        expect(secondReleaseResult.resultType).toBe("MESSAGE_RELEASED")
+
+        const firstDequeueResult = await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        }) as MessageDequeueResultMessageDequeued
+        expect(firstDequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
+        expect(firstDequeueResult.message.id).toBe(firstEnqueueResult.messageId)
+
+        const secondDequeueResult = await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        }) as MessageDequeueResultMessageDequeued
+        expect(secondDequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
+        expect(secondDequeueResult.message.id).toBe(secondEnqueueResult.messageId)
+
+        let channelState = await pool.query(sql `
+            SELECT * FROM test.channel_state
+        `).then(res => res.rows[0])
+        expect(parseInt(channelState.current_size)).toBe(2)
+
+        const firstFinalizeResult = await messageFinalize({
+            databaseClient: pool,
+            schema: "test",
+            id: firstEnqueueResult.messageId,
+            isSuccess: false
+        }) as MessageFinalizeResultMessageFinalized
+        expect(firstFinalizeResult.resultType).toBe("MESSAGE_FINALIZED")
+
+        channelState = await pool.query(sql `
+            SELECT * FROM test.channel_state
+        `).then(res => res.rows[0])
+        expect(parseInt(channelState.current_size)).toBe(1)
+
+        const secondFinalizeResult = await messageFinalize({
+            databaseClient: pool,
+            schema: "test",
+            id: secondEnqueueResult.messageId,
+            isSuccess: false
+        }) as MessageFinalizeResultMessageFinalized
+        expect(secondFinalizeResult.resultType).toBe("MESSAGE_FINALIZED")
+
+        const numRows = await pool.query(sql `
+            SELECT COUNT(*) as num_rows FROM test.channel_state
+        `).then(res => parseInt(res.rows[0].num_rows))
+        expect(numRows).toBe(0)
+    })
+
     it("deletes messages correctly", async () => {
         const enqueueResult = await messageEnqueue({
             databaseClient: pool,
