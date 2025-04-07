@@ -16,5 +16,6 @@ export default {
         indent: ['warn', 4],
         quotes: ['warn', 'double'],
         semi: ['warn', 'never'],
+        'no-console': 'warn'
     },
 }
