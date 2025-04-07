@@ -1,3 +1,15 @@
+# v0.4.1 (Mon Apr 07 2025)
+
+#### 🐛 Bug Fix
+
+- Remove DOM as lib from tsconfig [#17](https://github.com/marcoappio/hydra-mq/pull/17) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.4.0 (Mon Apr 07 2025)
 
 #### 🚀 Enhancement
