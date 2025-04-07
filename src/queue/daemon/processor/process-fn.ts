@@ -1,8 +1,9 @@
-export type ProcessorFn = (payload: string, metadata: {
+export type ProcessFnMetadata = {
     markAsFailed: () => void
     message: {
         id: string
-        channelName: string,
+        channelName: string
         numAttempts: number
     }
-}) => Promise<void>
+}
+export type ProcessorFn = (payload: string, metadata: ProcessFnMetadata) => Promise<void>
