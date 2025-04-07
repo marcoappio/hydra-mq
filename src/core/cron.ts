@@ -1,17 +1,18 @@
-type CronFieldResult =
+export type CronFieldResult =
     | { resultType: "CRON_FIELD_INVALID" }
     | { resultType: "CRON_FIELD_PARSED", values: number[] }
 
-type CronExprResult =
+export type CronExpr = {
+    days: number[]
+    daysOfWeek: number[]
+    hours: number[]
+    mins: number[]
+    months: number[]
+}
+
+export type CronExprResult =
     | { resultType: "CRON_EXPR_INVALID" }
-    | {
-        days: number[]
-        daysOfWeek: number[]
-        hours: number[]
-        mins: number[]
-        months: number[]
-        resultType: "CRON_EXPR_PARSED"
-    }
+    | { resultType: "CRON_EXPR_PARSED", expression: CronExpr }
 
 const MIN_MINUTES = 0
 const MAX_MINUTES = 59
@@ -74,7 +75,8 @@ export const parseCronField = (expr: string, min: number, max: number): CronFiel
 
     }
 
-    return { resultType: "CRON_FIELD_PARSED", values: [...result] }
+    const range = Array.from(result).sort((a, b) => a - b)
+    return { resultType: "CRON_FIELD_PARSED", values: range }
 
 }
 
@@ -115,11 +117,13 @@ export const parseCronExpr = (expr: string): CronExprResult => {
     }
 
     return {
-        days: days.values,
-        daysOfWeek: daysOfWeek.values,
-        hours: hours.values,
-        mins: mins.values,
-        months: months.values,
+        expression: {
+            days: days.values,
+            daysOfWeek: daysOfWeek.values,
+            hours: hours.values,
+            mins: mins.values,
+            months: months.values,
+        },
         resultType: "CRON_EXPR_PARSED",
     }
 

@@ -40,6 +40,7 @@
     "@typescript-eslint/parser": "8.26.1",
     "auto": "11.3.0",
     "bun-plugin-dts": "0.3.0",
+    "eslint": "9.22.0",
     "pg": "8.13.3",
     "typedoc": "0.27.9",
     "typedoc-github-theme": "0.2.1"
@@ -55,8 +56,5 @@
     "Worker",
     "Job",
     "Job Queue"
-  ],
-  "dependencies": {
-    "eslint": "9.22.0"
-  }
+  ]
 }
