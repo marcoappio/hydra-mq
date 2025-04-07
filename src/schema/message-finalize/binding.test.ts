@@ -3,11 +3,10 @@ import { randomUUID } from "crypto"
 import { messageFinalize, type MessageFinalizeResultMessageFinalized } from "@src/schema/message-finalize/binding"
 import { beforeEach, describe, expect, it } from "bun:test"
 import { Pool } from "pg"
-import { messageEnqueue, type MessageEnqueueResult, type MessageEnqueueResultMessageEnqueued } from "@src/schema/message-enqueue/binding"
+import { messageEnqueue, type MessageEnqueueResultMessageEnqueued } from "@src/schema/message-enqueue/binding"
 import { messageRelease, type MessageReleaseResult } from "@src/schema/message-release/binding"
 import { messageDequeue, type MessageDequeueResultMessageDequeued } from "@src/schema/message-dequeue/binding"
-import { sql, valueNode } from "@src/core/sql"
-import { JobType } from "@src/schema/job"
+import { sql } from "@src/core/sql"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
