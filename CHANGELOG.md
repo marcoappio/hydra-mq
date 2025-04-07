@@ -1,3 +1,19 @@
+# v0.4.0 (Mon Apr 07 2025)
+
+#### 🚀 Enhancement
+
+- Hydr 16 [#15](https://github.com/marcoappio/hydra-mq/pull/15) ([@tlonny](https://github.com/tlonny))
+
+#### 🐛 Bug Fix
+
+- Change build target to node :) [#16](https://github.com/marcoappio/hydra-mq/pull/16) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.3.1 (Thu Apr 03 2025)
 
 #### 🐛 Bug Fix
