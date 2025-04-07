@@ -22,7 +22,8 @@ export const messageEnqueueInstall = (params: {
                 p_lock_secs REAL,
                 p_lock_secs_factor REAL,
                 p_delay_secs REAL,
-                p_depends_on UUID[]
+                p_depends_on UUID[],
+                p_dependency_failure_cascade BOOLEAN
             )
             RETURNS TABLE (
                 o_result_code INTEGER,
@@ -77,6 +78,7 @@ export const messageEnqueueInstall = (params: {
                     is_processed,
                     num_dependencies,
                     num_dependencies_failed,
+                    dependency_failure_cascade,
                     created_at
                 ) VALUES (
                     v_message_id,
@@ -93,6 +95,7 @@ export const messageEnqueueInstall = (params: {
                     ${valueNode(false)},
                     COALESCE(ARRAY_LENGTH(v_normalized_deps, 1), 0),
                     ${valueNode(0)},
+                    p_dependency_failure_cascade,
                     v_now
                 ) ON CONFLICT (name) 
                 WHERE NOT is_processed

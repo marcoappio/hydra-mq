@@ -138,7 +138,8 @@ export const jobProcessInstall = (params : {
                         v_params.lock_secs,
                         v_params.lock_secs_factor,
                         v_params.delay_secs,
-                        ARRAY[]::UUID[]
+                        ARRAY[]::UUID[],
+                        ${valueNode(false)}
                     ) AS v_result;
                 ELSIF v_job.type = ${valueNode(JobType.MESSAGE_DEPENDENCY_RESOLVE)} THEN
                     SELECT message_id, is_success

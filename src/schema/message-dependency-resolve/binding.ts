@@ -8,11 +8,17 @@ type QueryResult = {
         | MessageDependencyResolveResultCode.MESSAGE_DEPENDENCY_RESOLVED
 }
 
-export type MessageDependencyResolveResult = {
-    resultType: 
-        | "MESSAGE_NOT_FOUND"
-        | "MESSAGE_DEPENDENCY_RESOLVED"
+export type MessageDependencyResolveResultMessageNotFound = {
+    resultType: "MESSAGE_NOT_FOUND"
 }
+
+export type MessageDependencyResolveResultMessageDependencyResolved = {
+    resultType: "MESSAGE_DEPENDENCY_RESOLVED"
+}
+
+export type MessageDependencyResolveResult = 
+    | MessageDependencyResolveResultMessageNotFound
+    | MessageDependencyResolveResultMessageDependencyResolved
 
 export const messageDependencyResolveParseQueryResult = (
     result: QueryResult
@@ -29,13 +35,13 @@ export const messageDependencyResolveParseQueryResult = (
 export const messageDependencyResolve = async (params: {
     databaseClient: DatabaseClient
     id: string,
-    isFailure: boolean
+    isSuccess: boolean
     schema: string
 }): Promise<MessageDependencyResolveResult> => {
     const result = await params.databaseClient.query(sql `
         SELECT * FROM ${refNode(params.schema)}.message_dependency_resolve(
             ${valueNode(params.id)},
-            ${valueNode(params.isFailure)}
+            ${valueNode(params.isSuccess)}
         )
     `).then(res => res.rows[0]) as QueryResult
     return messageDependencyResolveParseQueryResult(result)

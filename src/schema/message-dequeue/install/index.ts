@@ -41,7 +41,8 @@ export const messageDequeueInstall = (params: {
                 o_channel_name TEXT,
                 o_payload TEXT,
                 o_num_attempts INTEGER,
-                o_num_dependencies_failed INTEGER
+                o_num_dependencies_failed INTEGER,
+                o_dependency_failure_cascade BOOLEAN
             ) AS $$
             DECLARE
                 v_now TIMESTAMP;
@@ -62,7 +63,8 @@ export const messageDequeueInstall = (params: {
                         ${valueNode(null)}::TEXT, 
                         ${valueNode(null)}::TEXT, 
                         ${valueNode(null)}::INTEGER,
-                        ${valueNode(null)}::INTEGER;
+                        ${valueNode(null)}::INTEGER,
+                        ${valueNode(null)}::BOOLEAN;
                     RETURN;
                 END IF;
 
@@ -71,7 +73,12 @@ export const messageDequeueInstall = (params: {
                     status = ${valueNode(MessageStatus.PROCESSING)},
                     num_attempts = num_attempts - 1
                 WHERE id = v_channel_state.next_message_id
-                RETURNING id, payload, num_attempts, num_dependencies_failed
+                RETURNING 
+                    id, 
+                    payload, 
+                    num_attempts, 
+                    num_dependencies_failed,
+                    dependency_failure_cascade
                 INTO v_message;
 
                 UPDATE ${params.schema}.channel_state SET
@@ -101,7 +108,8 @@ export const messageDequeueInstall = (params: {
                     v_channel_state.name,
                     v_message.payload,
                     v_message.num_attempts,
-                    v_message.num_dependencies_failed;
+                    v_message.num_dependencies_failed,
+                    v_message.dependency_failure_cascade;
             END;
             $$ LANGUAGE plpgsql;
     `,

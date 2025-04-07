@@ -65,7 +65,8 @@ export const messageEnqueue = async (params: {
     lockSecs: number
     lockSecsFactor: number
     delaySecs: number,
-    dependsOn: string[]
+    dependsOn: string[],
+    dependencyFailureCascade: boolean
 }): Promise<MessageEnqueueResult> => {
     const result = await params.databaseClient.query(sql `
         SELECT * FROM ${refNode(params.schema)}.message_enqueue(
@@ -78,7 +79,8 @@ export const messageEnqueue = async (params: {
             ${valueNode(params.lockSecs)},
             ${valueNode(params.lockSecsFactor)},
             ${valueNode(params.delaySecs)},
-            ${arrayNode(params.dependsOn)}::UUID[]
+            ${arrayNode(params.dependsOn)}::UUID[],
+            ${valueNode(params.dependencyFailureCascade)}
         )
     `).then(res => res.rows[0]) as QueryResult
 

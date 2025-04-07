@@ -27,6 +27,7 @@ export const messageInstall = (params: {
             is_processed BOOLEAN NOT NULL,
             num_dependencies INTEGER NOT NULL,
             num_dependencies_failed INTEGER NOT NULL,
+            dependency_failure_cascade BOOLEAN NOT NULL,
             created_at TIMESTAMP,
             waiting_at TIMESTAMP,
             locked_at TIMESTAMP,

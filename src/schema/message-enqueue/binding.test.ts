@@ -19,7 +19,8 @@ type TestParams = {
     lockSecs: number
     lockSecsFactor: number
     delaySecs: number
-    dependsOn: string[]
+    dependsOn: string[],
+    dependencyFailureCascade: boolean,
 }
 
 beforeEach(async () => {
@@ -42,6 +43,7 @@ const nulledFieldsTestParams = {
     lockSecsFactor: 2,
     delaySecs: 0,
     dependsOn: [],
+    dependencyFailureCascade: true,
 }
 
 const filledFieldsTestParams = {
@@ -56,6 +58,7 @@ const filledFieldsTestParams = {
     lockSecsFactor: 2,
     delaySecs: 0,
     dependsOn: [],
+    dependencyFailureCascade: true,
 }
 
 const enqueueTestSet : TestParams[]  = [
