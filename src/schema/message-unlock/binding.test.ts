@@ -43,7 +43,7 @@ describe("messageUnlock", async () => {
             ... messageParams,
         }) as MessageEnqueueResultMessageEnqueued
 
-        const result = await messageUnlock({ 
+        const result = await messageUnlock({
             databaseClient: pool,
             schema: "test",
             id: enqueueResult.messageId

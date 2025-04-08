@@ -5,8 +5,8 @@ export type { MessageScheduleModule } from "@src/queue/channel/message/schedule"
 export type { QueueDaemonModule } from "@src/queue/daemon"
 export type { DaemonProcessor } from "@src/queue/daemon/processor"
 
-export type { 
-    HydraEvent, 
+export type {
+    HydraEvent,
     HydraEventHandler,
     HydraEventMessageDequeued,
     HydraEventMessageLocked,

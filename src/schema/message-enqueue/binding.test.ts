@@ -67,7 +67,7 @@ const enqueueTestSet : TestParams[]  = [
 ]
 
 describe("queueMessageEnqueue", async () => {
-    for(const testParams of enqueueTestSet) {
+    for (const testParams of enqueueTestSet) {
         it(`correctly enqueues message: ${testParams.description}`, async () => {
             const result = await messageEnqueue({
                 databaseClient: pool,
@@ -125,7 +125,7 @@ describe("queueMessageEnqueue", async () => {
             UPDATE test.message
             SET is_processed = true
             WHERE id = ${valueNode(firstResult.messageId)}
-        `)  
+        `)
 
         const thirdResult = await messageEnqueue({
             databaseClient: pool,

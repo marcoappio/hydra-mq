@@ -2,8 +2,8 @@ import { parseCronExpr } from "@src/core/cron"
 import type { DatabaseClient } from "@src/core/database-client"
 import { arrayNode, refNode, sql, valueNode } from "@src/core/sql"
 
-export type JobMessageEnqueueScheduleSetResult = 
-    | { resultType: "CRON_EXPR_INVALID" } 
+export type JobMessageEnqueueScheduleSetResult =
+    | { resultType: "CRON_EXPR_INVALID" }
     | { resultType: "JOB_SCHEDULE_SET" }
 
 export const jobMessageEnqueueScheduleSet = async (params: {

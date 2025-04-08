@@ -46,7 +46,7 @@ export const messageEnqueueParseQueryResult = (result : QueryResult): MessageEnq
         return { messageId: result.o_id, resultType: "MESSAGE_ENQUEUED" }
     } else if (result.o_result_code === MessageEnqueueResultCode.MESSAGE_DEDUPLICATED) {
         return { messageId: result.o_id, resultType: "MESSAGE_DEDUPLICATED" }
-    } else if (result.o_result_code === MessageEnqueueResultCode.MESSAGE_DEPENDENCY_NOT_FOUND) { 
+    } else if (result.o_result_code === MessageEnqueueResultCode.MESSAGE_DEPENDENCY_NOT_FOUND) {
         return { resultType: "MESSAGE_DEPENDENCY_NOT_FOUND" }
     } else {
         throw new Error("Unexpected result")

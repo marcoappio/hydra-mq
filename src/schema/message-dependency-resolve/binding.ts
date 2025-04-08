@@ -3,7 +3,7 @@ import { refNode, sql, valueNode } from "@src/core/sql"
 import { MessageDependencyResolveResultCode } from "@src/schema/message-dependency-resolve/install"
 
 type QueryResult = {
-    o_result_code: 
+    o_result_code:
         | MessageDependencyResolveResultCode.MESSAGE_NOT_FOUND
         | MessageDependencyResolveResultCode.MESSAGE_DEPENDENCY_RESOLVED
 }
@@ -16,7 +16,7 @@ export type MessageDependencyResolveResultMessageDependencyResolved = {
     resultType: "MESSAGE_DEPENDENCY_RESOLVED"
 }
 
-export type MessageDependencyResolveResult = 
+export type MessageDependencyResolveResult =
     | MessageDependencyResolveResultMessageNotFound
     | MessageDependencyResolveResultMessageDependencyResolved
 

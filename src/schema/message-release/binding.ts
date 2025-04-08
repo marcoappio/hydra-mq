@@ -3,7 +3,7 @@ import { refNode, sql, valueNode } from "@src/core/sql"
 import { MessageReleaseResultCode } from "@src/schema/message-release/install"
 
 type QueryResult = {
-    o_result_code: 
+    o_result_code:
         | MessageReleaseResultCode.MESSAGE_NOT_FOUND
         | MessageReleaseResultCode.MESSAGE_RELEASED
 }
@@ -21,9 +21,9 @@ export type MessageReleaseResult =
     | MessageReleaseResultMessageNotFound
 
 export const messageReleaseParseQueryResult = (result: QueryResult): MessageReleaseResult => {
-    if(result.o_result_code === MessageReleaseResultCode.MESSAGE_NOT_FOUND) {
+    if (result.o_result_code === MessageReleaseResultCode.MESSAGE_NOT_FOUND) {
         return { resultType: "MESSAGE_NOT_FOUND" }
-    } else if(result.o_result_code === MessageReleaseResultCode.MESSAGE_RELEASED) {
+    } else if (result.o_result_code === MessageReleaseResultCode.MESSAGE_RELEASED) {
         return { resultType: "MESSAGE_RELEASED" }
     } else {
         throw new Error("Unexpected result")

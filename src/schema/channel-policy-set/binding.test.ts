@@ -34,7 +34,7 @@ const messageParams = {
 describe("channelPolicySet", async () => {
 
     it("correctly sets null policy", async () => {
-        await channelPolicySet({ 
+        await channelPolicySet({
             databaseClient: pool,
             schema: "test",
             name: "foobar",
@@ -50,7 +50,7 @@ describe("channelPolicySet", async () => {
     })
 
     it("correctly sets invalid policy parameters", async () => {
-        await channelPolicySet({ 
+        await channelPolicySet({
             databaseClient: pool,
             schema: "test",
             name: "foobar",
@@ -66,14 +66,14 @@ describe("channelPolicySet", async () => {
     })
 
     it("correctly overwrites policy parameters", async () => {
-        await channelPolicySet({ 
+        await channelPolicySet({
             databaseClient: pool,
             schema: "test",
             name: "foobar",
             maxConcurrency: 1,
         })
 
-        await channelPolicySet({ 
+        await channelPolicySet({
             databaseClient: pool,
             schema: "test",
             name: "foobar",
@@ -110,7 +110,7 @@ describe("channelPolicySet", async () => {
             max_concurrency: null,
         })
 
-        await channelPolicySet({ 
+        await channelPolicySet({
             databaseClient: pool,
             schema: "test",
             name: "foobar",

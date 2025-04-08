@@ -41,7 +41,7 @@ export class DaemonProcessorExecutionModule {
                 break
             }
 
-            if(!dequeueResult.message.isDependenciesMet) {
+            if (!dequeueResult.message.isDependenciesMet) {
                 this.eventHandler({
                     daemonId: this.daemonId,
                     eventType: "MESSAGE_DEPENDENCIES_UNMET",
@@ -69,7 +69,7 @@ export class DaemonProcessorExecutionModule {
                 continue
             }
 
-            if(dequeueResult.message.numAttempts < 0) {
+            if (dequeueResult.message.numAttempts < 0) {
                 this.eventHandler({
                     daemonId: this.daemonId,
                     eventType: "MESSAGE_ATTEMPTS_EXHAUSTED",
