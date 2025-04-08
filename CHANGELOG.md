@@ -1,3 +1,15 @@
+# v0.5.1 (Tue Apr 08 2025)
+
+#### 🐛 Bug Fix
+
+- Add an option to cancel future retries [#27](https://github.com/marcoappio/hydra-mq/pull/27) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.5.0 (Tue Apr 08 2025)
 
 #### 🚀 Enhancement
