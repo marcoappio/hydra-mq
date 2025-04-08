@@ -60,6 +60,7 @@ export const messageEnqueue = async (params: {
     channelName: string | null
     payload: string
     priority: number | null
+    channelPriority: number | null
     numAttempts: number
     maxProcessingSecs: number
     lockSecs: number
@@ -74,6 +75,7 @@ export const messageEnqueue = async (params: {
             ${valueNode(params.channelName)},
             ${valueNode(params.payload)},
             ${valueNode(params.priority)},
+            ${valueNode(params.channelPriority)},
             ${valueNode(params.numAttempts)},
             ${valueNode(params.maxProcessingSecs)},
             ${valueNode(params.lockSecs)},

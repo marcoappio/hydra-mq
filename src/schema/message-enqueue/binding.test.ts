@@ -13,6 +13,7 @@ type TestParams = {
     channelName: string
     payload: string
     priority: number | null
+    channelPriority: number | null
     name: string | null
     numAttempts: number
     maxProcessingSecs: number
@@ -36,6 +37,7 @@ const nulledFieldsTestParams = {
     channelName: "test-channel",
     payload: "test-payload",
     priority: null,
+    channelPriority: null,
     name: null,
     numAttempts: 1,
     maxProcessingSecs: 60,
@@ -51,6 +53,7 @@ const filledFieldsTestParams = {
     channelName: "test-channel",
     payload: "test-payload",
     priority: 5,
+    channelPriority: null,
     name: "test-key",
     numAttempts: 1,
     maxProcessingSecs: 60,
