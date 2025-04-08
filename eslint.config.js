@@ -13,9 +13,9 @@ export default {
     rules: {
         '@typescript-eslint/no-unused-vars': 'warn',
         'eol-last': ['warn', 'always'],
-        indent: ['warn', 4],
-        quotes: ['warn', 'double'],
-        semi: ['warn', 'never'],
+        'indent': ['warn', 4],
+        'quotes': ['warn', 'double'],
+        'semi': ['warn', 'never'],
         'no-console': 'warn',
         'space-in-parens': ['warn', 'never'],
         'no-trailing-spaces': 'warn',
