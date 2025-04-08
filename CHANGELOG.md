@@ -1,3 +1,26 @@
+# v0.5.0 (Tue Apr 08 2025)
+
+#### 🚀 Enhancement
+
+- No-op to trigger release [#26](https://github.com/marcoappio/hydra-mq/pull/26) ([@tlonny](https://github.com/tlonny))
+- Add some more eslint rules [#25](https://github.com/marcoappio/hydra-mq/pull/25) ([@tlonny](https://github.com/tlonny))
+- Add dependency cascade override [#19](https://github.com/marcoappio/hydra-mq/pull/19) ([@tlonny](https://github.com/tlonny))
+
+#### 🐛 Bug Fix
+
+- Tweak release pipeline [#24](https://github.com/marcoappio/hydra-mq/pull/24) ([@tlonny](https://github.com/tlonny))
+- Add an explicit metadata type [#23](https://github.com/marcoappio/hydra-mq/pull/23) ([@tlonny](https://github.com/tlonny))
+- Merge message deletion and message finalization [#22](https://github.com/marcoappio/hydra-mq/pull/22) ([@tlonny](https://github.com/tlonny))
+- Remove the notion of max channel capacity [#21](https://github.com/marcoappio/hydra-mq/pull/21) ([@tlonny](https://github.com/tlonny))
+- Added no-console-log eslint rule [#20](https://github.com/marcoappio/hydra-mq/pull/20) ([@tlonny](https://github.com/tlonny))
+- Change release branch to "release" [#18](https://github.com/marcoappio/hydra-mq/pull/18) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.4.1 (Mon Apr 07 2025)
 
 #### 🐛 Bug Fix
