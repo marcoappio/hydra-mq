@@ -18,6 +18,7 @@ export const messageInstall = (params: {
             channel_name TEXT NOT NULL,
             payload TEXT NOT NULL,
             priority INTEGER NULL,
+            channel_priority INTEGER NULL,
             num_attempts INTEGER NOT NULL,
             max_processing_secs REAL NOT NULL,
             delay_secs REAL NOT NULL,
@@ -39,7 +40,8 @@ export const messageInstall = (params: {
         CREATE INDEX message_dequeue_ix
         ON ${params.schema}.message (
             channel_name,
-            priority DESC NULLS LAST,
+            priority ASC NULLS FIRST,
+            channel_priority ASC NULLS FIRST,
             waiting_at ASC
         ) WHERE status = ${valueNode(MessageStatus.WAITING)}
     `,

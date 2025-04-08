@@ -14,7 +14,8 @@ export const messageDequeueQueryMessage = (params: {
         WHERE status = ${valueNode(MessageStatus.WAITING)}
         AND channel_name = ${params.channelName}
         ORDER BY 
-            priority DESC NULLS LAST,
+            priority ASC NULLS FIRST,
+            channel_priority ASC NULLS FIRST,
             waiting_at ASC
         LIMIT ${params.limit}
     `

@@ -30,6 +30,7 @@ export class ChannelMessageModule {
         numAttempts?: number
         payload: string
         priority?: number
+        channelPriority?: number
         lockSecs?: number
         lockSecsFactor?: number
         delaySecs?: number,
@@ -42,6 +43,7 @@ export class ChannelMessageModule {
             numAttempts: params.numAttempts ?? MESSAGE_DEFAULT_NUM_ATTEMPTS,
             payload: params.payload,
             priority: params.priority ?? MESSAGE_DEFAULT_PRIORITY,
+            channelPriority: params.channelPriority ?? MESSAGE_DEFAULT_PRIORITY,
             channelName: this.channel,
             schema: this.schema,
             lockSecs: params.lockSecs ?? MESSAGE_DEFAULT_LOCK_SECS,

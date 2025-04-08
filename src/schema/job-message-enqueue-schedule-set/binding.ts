@@ -16,6 +16,7 @@ export const jobMessageEnqueueScheduleSet = async (params: {
         channelName: string | null
         payload: string
         priority: number | null
+        channelPriority: number | null
         numAttempts: number
         maxProcessingSecs: number
         lockSecs: number
@@ -35,6 +36,7 @@ export const jobMessageEnqueueScheduleSet = async (params: {
             ${valueNode(params.message.channelName)},
             ${valueNode(params.message.payload)},
             ${valueNode(params.message.priority)},
+            ${valueNode(params.message.channelPriority)},
             ${valueNode(params.message.numAttempts)},
             ${valueNode(params.message.maxProcessingSecs)},
             ${valueNode(params.message.lockSecs)},

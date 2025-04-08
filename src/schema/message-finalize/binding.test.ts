@@ -15,6 +15,7 @@ const messageParams = {
     channelName: "test-channel",
     payload: "test-payload",
     priority: null,
+    channelPriority: null,
     name: null,
     numAttempts: 1,
     maxProcessingSecs: 60,

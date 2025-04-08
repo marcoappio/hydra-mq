@@ -11,6 +11,7 @@ export const jobMessageEnqueueParamsInstall = (params: {
             channel_name TEXT NULL,
             payload TEXT NOT NULL,
             priority INTEGER NULL,
+            channel_priority INTEGER NULL,
             num_attempts INTEGER NOT NULL,
             max_processing_secs REAL NOT NULL,
             lock_secs REAL NOT NULL,

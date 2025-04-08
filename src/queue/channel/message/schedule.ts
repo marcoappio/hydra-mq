@@ -40,6 +40,7 @@ export class MessageScheduleModule {
         numAttempts?: number
         payload: string
         priority?: number
+        channelPriority?: number
         lockSecs?: number
         lockSecsFactor?: number
         delaySecs?: number
@@ -54,6 +55,7 @@ export class MessageScheduleModule {
                 channelName: this.channel,
                 payload: params.payload,
                 priority: params.priority ?? MESSAGE_DEFAULT_PRIORITY,
+                channelPriority: params.channelPriority ?? MESSAGE_DEFAULT_PRIORITY,
                 numAttempts: params.numAttempts ?? MESSAGE_DEFAULT_NUM_ATTEMPTS,
                 maxProcessingSecs: MESSAGE_DEFAULT_PROCESSING_SECS,
                 lockSecs: params.lockSecs ?? MESSAGE_DEFAULT_LOCK_SECS,
