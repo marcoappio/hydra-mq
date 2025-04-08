@@ -1,3 +1,15 @@
+# v0.5.2 (Tue Apr 08 2025)
+
+#### 🐛 Bug Fix
+
+- Fix small typo [#28](https://github.com/marcoappio/hydra-mq/pull/28) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.5.1 (Tue Apr 08 2025)
 
 #### 🐛 Bug Fix
