@@ -1,4 +1,4 @@
-export type ProcessFnMetadata = {
+export type ProcessorFnMetadata = {
     setFail: (params : {
         cancelRetries? : boolean
     }) => void
@@ -9,4 +9,4 @@ export type ProcessFnMetadata = {
         numAttempts: number
     }
 }
-export type ProcessorFn = (payload: string, metadata: ProcessFnMetadata) => Promise<void>
+export type ProcessorFn = (payload: string, metadata: ProcessorFnMetadata) => Promise<void>
