@@ -1,5 +1,5 @@
 import type { DatabaseClient } from "@src/core/database-client"
-import { channelPolicyClear } from "@src/schema/channel-config-clear/binding"
+import { channelPolicyClear } from "@src/schema/channel-policy-clear/binding"
 import { channelPolicySet } from "@src/schema/channel-policy-set/binding"
 
 export class ChannelPolicyModule {

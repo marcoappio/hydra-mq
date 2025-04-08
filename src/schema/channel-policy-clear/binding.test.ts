@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "bun:test"
 import { Pool } from "pg"
 import { channelPolicySet } from "@src/schema/channel-policy-set/binding"
 import { sql } from "@src/core/sql"
-import { channelPolicyClear } from "@src/schema/channel-config-clear/binding"
+import { channelPolicyClear } from "@src/schema/channel-policy-clear/binding"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
