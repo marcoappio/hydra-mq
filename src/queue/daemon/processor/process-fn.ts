@@ -1,5 +1,8 @@
 export type ProcessFnMetadata = {
-    markAsFailed: () => void
+    setFail: (params : {
+        cancelRetries? : boolean
+    }) => void
+
     message: {
         id: string
         channelName: string

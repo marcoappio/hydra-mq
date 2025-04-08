@@ -69,7 +69,86 @@ export class DaemonProcessorExecutionModule {
                 continue
             }
 
-            if (dequeueResult.message.numAttempts < 0) {
+            let processResult = true
+            let isRetry : boolean = dequeueResult.message.numAttempts > 0
+            let error: any = null
+
+            try {
+                await this.processorFn(dequeueResult.message.payload, {
+                    setFail: (params : {
+                        cancelRetries?: boolean
+                    }) => {
+                        processResult = false
+                        if (params.cancelRetries) {
+                            isRetry = false
+                        }
+                    },
+                    message: {
+                        id: dequeueResult.message.id,
+                        channelName: dequeueResult.message.channelName,
+                        numAttempts: dequeueResult.message.numAttempts,
+                    }
+                })
+            } catch (err) {
+                processResult = false
+                error = err
+            }
+
+            if (processResult) {
+                this.eventHandler({
+                    daemonId: this.daemonId,
+                    eventType: "MESSAGE_PROCESSED_SUCCESS",
+                    messageId: dequeueResult.message.id
+                })
+
+                const finalizeResult = await messageFinalize({
+                    databaseClient: this.databaseClient,
+                    id: dequeueResult.message.id,
+                    isSuccess: true,
+                    schema: this.schema,
+                })
+
+                if (finalizeResult.resultType === "MESSAGE_NOT_FOUND") {
+                    throw new Error(`Message: ${dequeueResult.message.id} could not be finalized`)
+                }
+
+                this.eventHandler({
+                    daemonId: this.daemonId,
+                    eventType: "MESSAGE_FINALIZED",
+                    messageId: dequeueResult.message.id,
+                    isSuccess: true
+                })
+            } else if (isRetry) {
+                this.eventHandler({
+                    daemonId: this.daemonId,
+                    eventType: "MESSAGE_PROCESSED_FAIL",
+                    messageId: dequeueResult.message.id,
+                    error,
+                })
+
+                const lockResult = await messageLock({
+                    databaseClient: this.databaseClient,
+                    id: dequeueResult.message.id,
+                    schema: this.schema,
+                })
+
+                if (lockResult.resultType === "MESSAGE_NOT_FOUND") {
+                    throw new Error(`Message: ${dequeueResult.message.id} could not be locked`)
+                }
+
+                this.eventHandler({
+                    daemonId: this.daemonId,
+                    eventType: "MESSAGE_LOCKED",
+                    messageId: dequeueResult.message.id,
+                })
+            } else {
+                this.eventHandler({
+                    daemonId: this.daemonId,
+                    eventType: "MESSAGE_PROCESSED_FAIL",
+                    messageId: dequeueResult.message.id,
+                    error,
+                })
+
                 this.eventHandler({
                     daemonId: this.daemonId,
                     eventType: "MESSAGE_ATTEMPTS_EXHAUSTED",
@@ -94,73 +173,7 @@ export class DaemonProcessorExecutionModule {
                     isSuccess: false
                 })
 
-                continue
-            }
 
-            let isProcessed = true
-            let error: any = null
-
-            try {
-                await this.processorFn(dequeueResult.message.payload, {
-                    markAsFailed: () => { isProcessed = false },
-                    message: {
-                        id: dequeueResult.message.id,
-                        channelName: dequeueResult.message.channelName,
-                        numAttempts: dequeueResult.message.numAttempts,
-                    }
-                })
-            } catch (err) {
-                isProcessed = false
-                error = err
-            }
-
-            if (isProcessed) {
-                this.eventHandler({
-                    daemonId: this.daemonId,
-                    eventType: "MESSAGE_PROCESSED_SUCCESS",
-                    messageId: dequeueResult.message.id
-                })
-
-                const finalizeResult = await messageFinalize({
-                    databaseClient: this.databaseClient,
-                    id: dequeueResult.message.id,
-                    isSuccess: true,
-                    schema: this.schema,
-                })
-
-                if (finalizeResult.resultType === "MESSAGE_NOT_FOUND") {
-                    throw new Error(`Message: ${dequeueResult.message.id} could not be finalized`)
-                }
-
-                this.eventHandler({
-                    daemonId: this.daemonId,
-                    eventType: "MESSAGE_FINALIZED",
-                    messageId: dequeueResult.message.id,
-                    isSuccess: true
-                })
-            } else {
-                this.eventHandler({
-                    daemonId: this.daemonId,
-                    eventType: "MESSAGE_PROCESSED_FAIL",
-                    messageId: dequeueResult.message.id,
-                    error,
-                })
-
-                const lockResult = await messageLock({
-                    databaseClient: this.databaseClient,
-                    id: dequeueResult.message.id,
-                    schema: this.schema,
-                })
-
-                if (lockResult.resultType === "MESSAGE_NOT_FOUND") {
-                    throw new Error(`Message: ${dequeueResult.message.id} could not be locked`)
-                }
-
-                this.eventHandler({
-                    daemonId: this.daemonId,
-                    eventType: "MESSAGE_LOCKED",
-                    messageId: dequeueResult.message.id,
-                })
             }
 
         }
