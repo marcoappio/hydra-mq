@@ -15,7 +15,7 @@ describe("sql", () => {
         [arrayNode([1, 2, 3]), "ARRAY[1, 2, 3]"],
     ]
 
-    for( const [input, expected] of testCases) {
+    for (const [input, expected] of testCases) {
         it(`${input.type}:${input.value} is expected to be ${expected}`, () => {
             expect(sql`${input}`).toBe(expected)
         })

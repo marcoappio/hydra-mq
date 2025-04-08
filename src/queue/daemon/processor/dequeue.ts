@@ -68,7 +68,7 @@ export class DaemonProcessorDequeueModule {
                 this.eggTimer.set(this.timeoutSecs * 1_000)
                 await this.semaphore.acquire()
                 continue
-            } else if(this.eventHandler) {
+            } else if (this.eventHandler) {
                 this.eventHandler({
                     daemonId: this.daemonId,
                     eventType: "MESSAGE_DEQUEUED",

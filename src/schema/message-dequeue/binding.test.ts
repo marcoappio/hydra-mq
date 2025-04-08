@@ -36,7 +36,7 @@ const messageParams = {
 describe("messageDequeue", async () => {
 
     it("correctly reports no messages available", async () => {
-        const result = await messageDequeue({ 
+        const result = await messageDequeue({
             databaseClient: pool,
             schema: "test",
         })
@@ -64,7 +64,7 @@ describe("messageDequeue", async () => {
             }),
         ] as MessageEnqueueResultMessageEnqueued[]
 
-        for(const messageResult of enqueued) {
+        for (const messageResult of enqueued) {
             await messageRelease({
                 databaseClient: pool,
                 schema: "test",
@@ -84,7 +84,7 @@ describe("messageDequeue", async () => {
             next_priority: null,
         })
 
-        let firstResult = await messageDequeue({ 
+        let firstResult = await messageDequeue({
             databaseClient: pool,
             schema: "test",
         })
@@ -94,7 +94,7 @@ describe("messageDequeue", async () => {
         expect(firstResult.message.id).toBe(enqueued[0].messageId)
 
 
-        let secondResult = await messageDequeue({ 
+        let secondResult = await messageDequeue({
             databaseClient: pool,
             schema: "test",
         })
@@ -104,7 +104,7 @@ describe("messageDequeue", async () => {
 
         expect(secondResult.message.id).toBe(enqueued[2].messageId)
 
-        let thirdResult = await messageDequeue({ 
+        let thirdResult = await messageDequeue({
             databaseClient: pool,
             schema: "test",
         })
@@ -121,7 +121,7 @@ describe("messageDequeue", async () => {
 
         expect(channelState.next_message_id).toBe(null)
 
-        const fourthResult = await messageDequeue({ 
+        const fourthResult = await messageDequeue({
             databaseClient: pool,
             schema: "test",
         })
@@ -150,7 +150,7 @@ describe("messageDequeue", async () => {
             }),
         ] as MessageEnqueueResultMessageEnqueued[]
 
-        for(const messageResult of enqueued) {
+        for (const messageResult of enqueued) {
             await messageRelease({
                 databaseClient: pool,
                 schema: "test",
@@ -158,7 +158,7 @@ describe("messageDequeue", async () => {
             })
         }
 
-        let firstResult = await messageDequeue({ 
+        let firstResult = await messageDequeue({
             databaseClient: pool,
             schema: "test",
         })
@@ -168,16 +168,16 @@ describe("messageDequeue", async () => {
 
         expect(firstResult.message.id).toBe(enqueued[0].messageId)
 
-        let secondResult = await messageDequeue({ 
+        let secondResult = await messageDequeue({
             databaseClient: pool,
             schema: "test",
-        }) 
+        })
 
         expect(secondResult.resultType).toBe("QUEUE_EMPTY")
 
     })
 
-    for(const dependencyFailureCascade of [true, false]) {
+    for (const dependencyFailureCascade of [true, false]) {
         it(`correctly reports on dependency status with dependencyFailureCascade:${dependencyFailureCascade}`, async () => {
             const firstEnqueueResult = await messageEnqueue({
                 ...messageParams,

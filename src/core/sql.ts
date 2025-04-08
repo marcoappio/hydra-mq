@@ -38,7 +38,7 @@ const escapeValue = (val: ValueType): string => {
         return val.toString()
     } else if (typeof val === "boolean") {
         return val ? "TRUE" : "FALSE"
-    } else if(val instanceof Date) {
+    } else if (val instanceof Date) {
         return `'${val.toISOString()}'`
     } else if (typeof val === "string") {
         const escapedStr = val.replace(/'/g, "''")
@@ -84,13 +84,13 @@ export const sql = (fragments: TemplateStringsArray, ...nodes: SqlNode[]): strin
 
         if (ix < nodes.length) {
             const node = nodes[ix]
-            if(node.type === "VALUE") {
+            if (node.type === "VALUE") {
                 zipped.push(escapeValueNode(node))
-            } else if(node.type === "REF") {
+            } else if (node.type === "REF") {
                 zipped.push(escapeRefNode(node))
-            } else if(node.type === "ARRAY") {
+            } else if (node.type === "ARRAY") {
                 zipped.push(escapeArrayNode(node))
-            } else if(node.type === "RAW") {
+            } else if (node.type === "RAW") {
                 zipped.push(escapeRawNode(node))
             } else {
                 throw new Error("Unknown node type")

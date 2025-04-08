@@ -16,6 +16,11 @@ export default {
         indent: ['warn', 4],
         quotes: ['warn', 'double'],
         semi: ['warn', 'never'],
-        'no-console': 'warn'
+        'no-console': 'warn',
+        'space-in-parens': ['warn', 'never'],
+        'no-trailing-spaces': 'warn',
+        'comma-spacing': 'warn',
+        'space-before-blocks': 'warn',
+        'keyword-spacing': 'warn',
     },
 }

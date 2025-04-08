@@ -36,7 +36,7 @@ const messageParams = {
 describe("messageRelease", async () => {
 
     it("correctly reports on missing message", async () => {
-        const result = await messageRelease({ 
+        const result = await messageRelease({
             databaseClient: pool,
             schema: "test",
             id: randomUUID()
@@ -108,7 +108,7 @@ describe("messageRelease", async () => {
             SELECT * FROM test.channel_state
             WHERE name = ${valueNode(messageParams.channelName)}
         `).then(res => res.rows[0])
-        
+
         expect(channelState).toMatchObject({
             name: messageParams.channelName,
             max_concurrency: null,

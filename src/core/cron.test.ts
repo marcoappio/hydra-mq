@@ -42,7 +42,7 @@ describe("parseCronField", () => {
         }]
     ]
 
-    for(const [field, expected] of testPairs) {
+    for (const [field, expected] of testPairs) {
         const testDescr = `parses: ${field.field} (${field.min}, ${field.max}) to: ${expected.resultType}`
         it(testDescr, () => {
             const result = parseCronField(field.field, field.min, field.max)

@@ -33,23 +33,23 @@ const testSets : TestSet[] = [
         expression: getCron("* * * * *"),
         testPairs: [
             [
-                new Date("2023-01-01T00:00:00Z"), 
+                new Date("2023-01-01T00:00:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-01-01T00:01:00Z") }
             ],
             [
-                new Date("2023-01-01T00:01:00Z"), 
+                new Date("2023-01-01T00:01:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-01-01T00:02:00Z") }
             ],
             [
-                new Date("2023-01-01T00:00:30Z"), 
+                new Date("2023-01-01T00:00:30Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-01-01T00:01:00Z") }
             ],
             [
-                new Date("2023-01-01T00:59:00Z"), 
+                new Date("2023-01-01T00:59:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-01-01T01:00:00Z") }
             ],
             [
-                new Date("2023-01-31T23:59:00Z"), 
+                new Date("2023-01-31T23:59:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-02-01T00:00:00Z") }
             ],
         ]
@@ -58,11 +58,11 @@ const testSets : TestSet[] = [
         expression: getCron("*/5 * * * *"),
         testPairs: [
             [
-                new Date("2023-01-01T00:02:00Z"), 
+                new Date("2023-01-01T00:02:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-01-01T00:05:00Z") }
             ],
             [
-                new Date("2023-01-01T00:04:00Z"), 
+                new Date("2023-01-01T00:04:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-01-01T00:05:00Z") }
             ],
         ]
@@ -71,23 +71,23 @@ const testSets : TestSet[] = [
         expression: getCron("0 * * * *"),
         testPairs: [
             [
-                new Date("2023-01-01T00:00:00Z"), 
+                new Date("2023-01-01T00:00:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-01-01T01:00:00Z") }
             ],
             [
-                new Date("2023-01-01T01:00:00Z"), 
+                new Date("2023-01-01T01:00:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-01-01T02:00:00Z") }
             ],
             [
-                new Date("2023-01-01T00:30:00Z"), 
+                new Date("2023-01-01T00:30:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-01-01T01:00:00Z") }
             ],
             [
-                new Date("2023-01-01T23:00:00Z"), 
+                new Date("2023-01-01T23:00:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-01-02T00:00:00Z") }
             ],
             [
-                new Date("2023-01-31T23:00:00Z"), 
+                new Date("2023-01-31T23:00:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2023-02-01T00:00:00Z") }
             ],
         ],
@@ -105,7 +105,7 @@ const testSets : TestSet[] = [
         expression: getCron("0 0 * * 0"),
         testPairs: [
             [
-                new Date("2025-04-03T00:00:00Z"), 
+                new Date("2025-04-03T00:00:00Z"),
                 { resultType: "TIMESTAMP_FOUND", timestamp: new Date("2025-04-06T00:00:00Z") }
             ],
         ],
@@ -114,9 +114,9 @@ const testSets : TestSet[] = [
 
 describe("cron_next", async () => {
 
-    for(const testSet of testSets) {
+    for (const testSet of testSets) {
         const [rawExpr, parsedExpr] = testSet.expression
-        for(const [start, next] of testSet.testPairs) {
+        for (const [start, next] of testSet.testPairs) {
             const startStr = start.toISOString()
             it(`using: ${rawExpr}, we should correctly iterate from: ${startStr}`, async () => {
                 const result = await cronNext({

@@ -3,13 +3,13 @@ import { refNode, sql, valueNode } from "@src/core/sql"
 import { MessageLockResultCode } from "@src/schema/message-lock/install"
 
 type QueryResult = {
-    o_result_code: 
+    o_result_code:
         | MessageLockResultCode.MESSAGE_LOCKED
         | MessageLockResultCode.MESSAGE_NOT_FOUND
 }
 
 export type MessageLockResult = {
-    resultType: 
+    resultType:
         | "MESSAGE_LOCKED"
         | "MESSAGE_NOT_FOUND"
 }

@@ -52,8 +52,8 @@ type QueryResultJobMessageEnqueueProcessedMessageReturned = {
     o_type: JobType.MESSAGE_ENQUEUE
     o_name: string
     o_result_code: JobProcessResultCode.JOB_PROCESSED
-    o_job_result_code: 
-        | MessageEnqueueResultCode.MESSAGE_DEDUPLICATED 
+    o_job_result_code:
+        | MessageEnqueueResultCode.MESSAGE_DEDUPLICATED
         | MessageEnqueueResultCode.MESSAGE_ENQUEUED
     o_job_message_id: string
 }
@@ -106,7 +106,7 @@ type ResultJobMessageEnqueueProcessed = {
     jobResult: MessageEnqueueResult
 }
 
-export type JobProcessResult = 
+export type JobProcessResult =
     | ResultQueueEmpty
     | ResultJobMessageReleaseProcessed
     | ResultJobMessageUnlockProcessed
@@ -114,10 +114,10 @@ export type JobProcessResult =
     | ResultJobMessageDependencyResolveProcessed
 
 export const jobProcessParseQueryResult = (result: QueryResult): JobProcessResult => {
-    if(result.o_result_code === JobProcessResultCode.QUEUE_EMPTY) {
+    if (result.o_result_code === JobProcessResultCode.QUEUE_EMPTY) {
         return { resultType: "QUEUE_EMPTY" }
-    } else if(result.o_type === JobType.MESSAGE_ENQUEUE) {
-        if(result.o_job_result_code === MessageEnqueueResultCode.MESSAGE_DEPENDENCY_NOT_FOUND) {
+    } else if (result.o_type === JobType.MESSAGE_ENQUEUE) {
+        if (result.o_job_result_code === MessageEnqueueResultCode.MESSAGE_DEPENDENCY_NOT_FOUND) {
             return {
                 id: result.o_id,
                 resultType: "JOB_MESSAGE_ENQUEUE_PROCESSED",
@@ -136,21 +136,21 @@ export const jobProcessParseQueryResult = (result: QueryResult): JobProcessResul
                 })
             }
         }
-    } else if(result.o_type === JobType.MESSAGE_RELEASE) {
+    } else if (result.o_type === JobType.MESSAGE_RELEASE) {
         return {
             id: result.o_id,
             resultType: "JOB_MESSAGE_RELEASE_PROCESSED",
             messageId: result.o_job_message_id,
             jobResult: messageReleaseParseQueryResult({ o_result_code: result.o_job_result_code }),
         }
-    } else if(result.o_type === JobType.MESSAGE_UNLOCK) {
+    } else if (result.o_type === JobType.MESSAGE_UNLOCK) {
         return {
             id: result.o_id,
             messageId: result.o_job_message_id,
             resultType: "JOB_MESSAGE_UNLOCK_PROCESSED",
             jobResult: messageUnlockParseQueryResult({ o_result_code: result.o_job_result_code }),
         }
-    } else if(result.o_type === JobType.MESSAGE_DEPENDENCY_RESOLVE) {
+    } else if (result.o_type === JobType.MESSAGE_DEPENDENCY_RESOLVE) {
         return {
             id: result.o_id,
             messageId: result.o_job_message_id,

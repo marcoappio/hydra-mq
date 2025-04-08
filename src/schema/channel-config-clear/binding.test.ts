@@ -19,7 +19,7 @@ beforeEach(async () => {
 describe("channelPolicyClear", async () => {
 
     it("is a noop for missing channel policy", async () => {
-        await channelPolicyClear({ 
+        await channelPolicyClear({
             databaseClient: pool,
             schema: "test",
             name: "foobar"
@@ -32,7 +32,7 @@ describe("channelPolicyClear", async () => {
     })
 
     it("doesn't remove other channel policies", async () => {
-        await channelPolicySet({ 
+        await channelPolicySet({
             databaseClient: pool,
             schema: "test",
             name: "foobar",
@@ -44,8 +44,8 @@ describe("channelPolicyClear", async () => {
         `)
 
         expect(result.rows.length).toBe(1)
-        
-        await channelPolicyClear({ 
+
+        await channelPolicyClear({
             databaseClient: pool,
             schema: "test",
             name: "other"
@@ -60,7 +60,7 @@ describe("channelPolicyClear", async () => {
     })
 
     it("removes specified channel policy", async () => {
-        await channelPolicySet({ 
+        await channelPolicySet({
             databaseClient: pool,
             schema: "test",
             name: "foobar",
@@ -72,8 +72,8 @@ describe("channelPolicyClear", async () => {
         `)
 
         expect(result.rows.length).toBe(1)
-        
-        await channelPolicyClear({ 
+
+        await channelPolicyClear({
             databaseClient: pool,
             schema: "test",
             name: "foobar"

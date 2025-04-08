@@ -53,8 +53,8 @@ export const cronNext = async (params: {
             timestamp: result.o_timestamp,
         }
     } else if (result.o_result_code === CronNextResultCode.TIMESTAMP_NOT_FOUND) {
-        return { 
-            resultType: "TIMESTAMP_NOT_FOUND" 
+        return {
+            resultType: "TIMESTAMP_NOT_FOUND"
         }
     } else {
         throw new Error("Unexpected result")

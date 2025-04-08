@@ -18,7 +18,7 @@ export class QueueDaemonModule {
     }
 
     private eventHandler(event : HydraEvent) {
-        for(const handler of this.eventHandlers) {
+        for (const handler of this.eventHandlers) {
             handler(event)
         }
     }

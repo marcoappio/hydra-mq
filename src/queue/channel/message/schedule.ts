@@ -27,9 +27,9 @@ export class MessageScheduleModule {
     }) {
         this.schema = params.schema
         this.channel = params.channel
-        this.jobName = getUniqueJobName({ 
-            channel: params.channel, 
-            name: params.name 
+        this.jobName = getUniqueJobName({
+            channel: params.channel,
+            name: params.name
         })
     }
 

@@ -36,7 +36,7 @@ beforeEach(async () => {
 describe("messageFinalize", async () => {
 
     it("correctly reports no messages available", async () => {
-        const result = await messageFinalize({ 
+        const result = await messageFinalize({
             databaseClient: pool,
             schema: "test",
             id: randomUUID(),
