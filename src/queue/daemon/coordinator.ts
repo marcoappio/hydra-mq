@@ -56,6 +56,13 @@ export class DaemonCoordinator {
                         messageId: result.jobResult.messageId,
                         jobId: result.id,
                     })
+                } else if (result.jobResult.resultType === "MESSAGE_DEDUPLICATED") {
+                    this.eventHandler({
+                        daemonId: this.daemonId,
+                        eventType: "MESSAGE_DEDUPLICATED",
+                        messageId: result.jobResult.messageId,
+                        jobId: result.id,
+                    })
                 } else {
                     throw new Error(`Unexpected job result: ${result.jobResult.resultType}`)
                 }
