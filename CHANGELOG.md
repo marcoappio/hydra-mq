@@ -1,3 +1,15 @@
+# v0.6.1 (Mon Apr 14 2025)
+
+#### 🐛 Bug Fix
+
+- Allow deduplicating scheduled messages [#30](https://github.com/marcoappio/hydra-mq/pull/30) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.6.0 (Tue Apr 08 2025)
 
 #### 🚀 Enhancement
