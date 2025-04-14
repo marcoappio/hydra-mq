@@ -7,6 +7,13 @@ export type HydraEventMessageEnqueued = {
     messageId: string
 }
 
+export type HydraEventMessageDeduplicated = {
+    daemonId: string | null
+    eventType: "MESSAGE_DEDUPLICATED"
+    jobId: string
+    messageId: string
+}
+
 export type HydraEventMessageReleased = {
     daemonId: string | null
     eventType: "MESSAGE_RELEASED"
@@ -74,6 +81,7 @@ export type HydraEventMessageDependencyResolved = {
 
 export type HydraEvent =
     | HydraEventMessageEnqueued
+    | HydraEventMessageDeduplicated
     | HydraEventMessageReleased
     | HydraEventMessageDequeued
     | HydraEventMessageProcessedSuccess
