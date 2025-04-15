@@ -32,6 +32,7 @@ export class ChannelMessageModule {
         priority?: number
         channelPriority?: number
         lockSecs?: number
+        maxProcessingSecs?: number
         lockSecsFactor?: number
         delaySecs?: number,
         dependsOn?: string[],
@@ -49,7 +50,7 @@ export class ChannelMessageModule {
             lockSecs: params.lockSecs ?? MESSAGE_DEFAULT_LOCK_SECS,
             lockSecsFactor: params.lockSecsFactor ?? MESSAGE_DEFAULT_LOCK_SECS_FACTOR,
             delaySecs: params.delaySecs ?? MESSAGE_DEFAULT_DELAY_SECS,
-            maxProcessingSecs: MESSAGE_DEFAULT_PROCESSING_SECS,
+            maxProcessingSecs: params.maxProcessingSecs ?? MESSAGE_DEFAULT_PROCESSING_SECS,
             dependsOn: params.dependsOn ?? [],
             dependencyFailureCascade: params.dependencyFailureCascade ?? MESSAGE_DEFAULT_DEPENDENCY_FAILURE_CASCADE,
         })

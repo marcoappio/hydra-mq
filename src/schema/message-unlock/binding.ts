@@ -8,13 +8,13 @@ export type MessageUnlockResult = {
         | "MESSAGE_UNLOCKED"
 }
 
-export type QueryResult = {
+type QueryResult = {
     o_result_code:
         | MessageUnlockResultCode.MESSAGE_NOT_FOUND
         | MessageUnlockResultCode.MESSAGE_UNLOCKED
 }
 
-export const messageUnlockParseQueryResult = (result: QueryResult): MessageUnlockResult => {
+const messageUnlockParseQueryResult = (result: QueryResult): MessageUnlockResult => {
     if (result.o_result_code === MessageUnlockResultCode.MESSAGE_NOT_FOUND) {
         return { resultType: "MESSAGE_NOT_FOUND" }
     } else if (result.o_result_code === MessageUnlockResultCode.MESSAGE_UNLOCKED) {

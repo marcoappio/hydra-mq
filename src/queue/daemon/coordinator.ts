@@ -48,58 +48,15 @@ export class DaemonCoordinator {
                 this.eggTimer.set(this.timeoutSecs * 1000)
                 await this.semaphore.acquire()
                 continue
-            } else if (result.resultType === "JOB_MESSAGE_ENQUEUE_PROCESSED") {
-                if (result.jobResult.resultType === "MESSAGE_ENQUEUED") {
-                    this.eventHandler({
-                        daemonId: this.daemonId,
-                        eventType: "MESSAGE_ENQUEUED",
-                        messageId: result.jobResult.messageId,
-                        jobId: result.id,
-                    })
-                } else if (result.jobResult.resultType === "MESSAGE_DEDUPLICATED") {
-                    this.eventHandler({
-                        daemonId: this.daemonId,
-                        eventType: "MESSAGE_DEDUPLICATED",
-                        messageId: result.jobResult.messageId,
-                        jobId: result.id,
-                    })
-                } else {
-                    throw new Error(`Unexpected job result: ${result.jobResult.resultType}`)
-                }
-            } else if (result.resultType === "JOB_MESSAGE_RELEASE_PROCESSED") {
-                if (result.jobResult.resultType === "MESSAGE_RELEASED") {
-                    this.eventHandler({
-                        daemonId: this.daemonId,
-                        eventType: "MESSAGE_RELEASED",
-                        messageId: result.messageId,
-                        jobId: result.id,
-                    })
-                } else {
-                    throw new Error(`Unexpected job result: ${result.jobResult.resultType}`)
-                }
-            } else if (result.resultType === "JOB_MESSAGE_UNLOCK_PROCESSED") {
-                if (result.jobResult.resultType === "MESSAGE_UNLOCKED") {
-                    this.eventHandler({
-                        daemonId: this.daemonId,
-                        eventType: "MESSAGE_UNLOCKED",
-                        messageId: result.messageId,
-                        jobId: result.id,
-                    })
-                } else {
-                    throw new Error(`Unexpected job result: ${result.jobResult.resultType}`)
-                }
-            } else if (result.resultType === "JOB_MESSAGE_DEPENDENCY_RESOLVE_PROCESSED") {
-                if (result.jobResult.resultType === "MESSAGE_DEPENDENCY_RESOLVED") {
-                    this.eventHandler({
-                        daemonId: this.daemonId,
-                        eventType: "MESSAGE_DEPENDENCY_RESOLVED",
-                        messageId: result.messageId,
-                        jobId: result.id,
-                    })
-                } else {
-                    throw new Error(`Unexpected job result: ${result.jobResult.resultType}`)
-                }
+            } else if (result.resultType === "JOB_PROCESSED") {
+                this.eventHandler({
+                    daemonId: this.daemonId,
+                    eventType: "JOB_PROCESSED",
+                    jobId: result.id,
+                    jobType: result.type,
+                })
             } else {
+                result satisfies never
                 throw new Error("Unexpected result")
             }
         }

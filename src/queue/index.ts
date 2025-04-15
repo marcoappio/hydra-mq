@@ -11,7 +11,6 @@ import { messageEnqueueInstall } from "@src/schema/message-enqueue/install"
 import { jobMessageReleaseEnqueueInstall } from "@src/schema/job-message-release-enqueue"
 import { messageReleaseInstall } from "@src/schema/message-release/install"
 import { channelPolicySetInstall } from "@src/schema/channel-policy-set/install"
-import { jobMessageDeleteParamsInstall } from "@src/schema/job-message-delete-params"
 import { jobMessageUnlockParamsInstall } from "@src/schema/job-message-unlock-params"
 import { jobMessageUnlockEnqueueInstall } from "@src/schema/job-message-unlock-enqueue"
 import { messageUnlockInstall } from "@src/schema/message-unlock/install"
@@ -28,6 +27,9 @@ import { messageDependencyResolveInstall } from "@src/schema/message-dependency-
 import { jobMessageDependencyResolveParamsInstall } from "@src/schema/job-message-dependency-resolve-params"
 import { jobMessageDependencyResolveEnqueueInstall } from "@src/schema/job-message-dependency-resolve-enqueue"
 import { jobMessageEnqueueParamsInstall } from "@src/schema/job-message-enqueue-params"
+import { messageSweepInstall } from "@src/schema/messages-sweep/install"
+import { jobMessageLockEnqueueInstall } from "@src/schema/job-message-lock-enqueue"
+import { jobMessageLockParamsInstall } from "@src/schema/job-message-lock-params"
 
 export class Queue {
 
@@ -61,15 +63,16 @@ export class Queue {
             ...channelStateInstall({ schema }),
             ...jobInstall({ schema }),
             ...jobMessageReleaseParamsInstall({ schema }),
-            ...jobMessageDeleteParamsInstall({ schema }),
             ...jobMessageEnqueueParamsInstall({ schema }),
             ...jobMessageUnlockParamsInstall({ schema }),
+            ...jobMessageLockParamsInstall({ schema }),
             ...jobMessageDependencyResolveParamsInstall({ schema }),
 
             // Util Functions
             ...cronNextInstall({ schema }),
 
             // Message functions
+            ...messageSweepInstall({ schema }),
             ...messageDequeueInstall({ schema }),
             ...messageDependencyResolveInstall({ schema }),
             ...messageEnqueueInstall({ schema }),
@@ -85,6 +88,7 @@ export class Queue {
             // Job functions
             ...jobMessageEnqueueScheduleClearInstall({ schema }),
             ...jobMessageEnqueueScheduleSetInstall({ schema }),
+            ...jobMessageLockEnqueueInstall({ schema }),
             ...jobMessageReleaseEnqueueInstall({ schema }),
             ...jobMessageDependencyResolveEnqueueInstall({ schema }),
             ...jobMessageUnlockEnqueueInstall({ schema }),

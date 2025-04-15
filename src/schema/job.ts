@@ -1,10 +1,12 @@
 import { sql, type SqlRefNode } from "@src/core/sql"
 
 export enum JobType {
-    MESSAGE_RELEASE,
-    MESSAGE_UNLOCK,
-    MESSAGE_ENQUEUE,
-    MESSAGE_DEPENDENCY_RESOLVE
+    MESSAGE_RELEASE = "MESSAGE_RELEASE",
+    MESSAGE_UNLOCK = "MESSAGE_UNLOCK",
+    MESSAGES_SWEEP = "MESSAGES_SWEEP",
+    MESSAGE_LOCK = "MESSAGE_LOCK",
+    MESSAGE_ENQUEUE = "MESSAGE_ENQUEUE",
+    MESSAGE_DEPENDENCY_RESOLVE = "MESSAGE_DEPENDENCY_RESOLVE",
 }
 
 export const jobInstall = (params: {
@@ -14,7 +16,7 @@ export const jobInstall = (params: {
         sql `
             CREATE TABLE ${params.schema}.job (
                 id UUID NOT NULL DEFAULT GEN_RANDOM_UUID(),
-                type INTEGER NOT NULL,
+                type TEXT NOT NULL,
                 name TEXT NULL,
                 is_recurring BOOLEAN NOT NULL,
                 cron_expr_mins INTEGER[],

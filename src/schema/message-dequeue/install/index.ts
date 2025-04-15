@@ -71,6 +71,7 @@ export const messageDequeueInstall = (params: {
                 UPDATE ${params.schema}.message SET
                     is_processed = ${valueNode(true)},
                     status = ${valueNode(MessageStatus.PROCESSING)},
+                    sweep_after = v_now + (max_processing_secs * INTERVAL '1 second'),
                     num_attempts = num_attempts - 1
                 WHERE id = v_channel_state.next_message_id
                 RETURNING 

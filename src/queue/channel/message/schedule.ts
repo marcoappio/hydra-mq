@@ -42,6 +42,7 @@ export class MessageScheduleModule {
         priority?: number
         channelPriority?: number
         lockSecs?: number
+        maxProcessingSecs?: number
         lockSecsFactor?: number
         delaySecs?: number
     }) {
@@ -57,7 +58,7 @@ export class MessageScheduleModule {
                 priority: params.priority ?? MESSAGE_DEFAULT_PRIORITY,
                 channelPriority: params.channelPriority ?? MESSAGE_DEFAULT_PRIORITY,
                 numAttempts: params.numAttempts ?? MESSAGE_DEFAULT_NUM_ATTEMPTS,
-                maxProcessingSecs: MESSAGE_DEFAULT_PROCESSING_SECS,
+                maxProcessingSecs: params.maxProcessingSecs ?? MESSAGE_DEFAULT_PROCESSING_SECS,
                 lockSecs: params.lockSecs ?? MESSAGE_DEFAULT_LOCK_SECS,
                 lockSecsFactor: params.lockSecsFactor ?? MESSAGE_DEFAULT_LOCK_SECS_FACTOR,
                 delaySecs: params.delaySecs ?? MESSAGE_DEFAULT_DELAY_SECS,
