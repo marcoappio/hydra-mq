@@ -1,3 +1,15 @@
+# v0.6.3 (Tue Apr 15 2025)
+
+#### 🐛 Bug Fix
+
+- Pipe up job sweeps (Stalled Jobs) [#32](https://github.com/marcoappio/hydra-mq/pull/32) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.6.2 (Tue Apr 15 2025)
 
 #### 🐛 Bug Fix
