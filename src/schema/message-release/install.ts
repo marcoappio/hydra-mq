@@ -66,7 +66,7 @@ export const messageReleaseInstall = (params: {
                     v_message.priority
                 ) ON CONFLICT (name) DO UPDATE SET
                     id = ${params.schema}.channel_state.id
-                RETURNING current_size
+                RETURNING current_size, next_message_id
                 INTO v_channel_state;
 
                 UPDATE ${params.schema}.message SET
@@ -74,11 +74,17 @@ export const messageReleaseInstall = (params: {
                     waiting_at = v_now
                 WHERE id = p_id;
 
-                UPDATE ${params.schema}.channel_state SET
-                    current_size = current_size + 1,
-                    next_message_id = CASE WHEN next_message_id IS NULL THEN p_id ELSE next_message_id END,
-                    next_priority = CASE WHEN next_message_id IS NULL THEN v_message.priority ELSE next_priority END
-                WHERE name = v_message.channel_name;
+                IF v_channel_state.next_message_id IS NULL THEN
+                    UPDATE ${params.schema}.channel_state SET
+                        current_size = current_size + 1,
+                        next_message_id = p_id,
+                        next_priority = v_message.priority
+                    WHERE name = v_message.channel_name;
+                ELSE
+                    UPDATE ${params.schema}.channel_state SET
+                        current_size = current_size + 1
+                    WHERE name = v_message.channel_name;
+                END IF;
 
                 RETURN QUERY SELECT
                     ${valueNode(MessageReleaseResultCode.MESSAGE_RELEASED)};
