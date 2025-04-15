@@ -2,7 +2,7 @@ import type { DatabaseClient } from "@src/core/database-client"
 import { refNode, sql, valueNode } from "@src/core/sql"
 import { MessageDependencyResolveResultCode } from "@src/schema/message-dependency-resolve/install"
 
-type QueryResult = {
+export type MessageDependencyResolveQueryResult = {
     o_result_code:
         | MessageDependencyResolveResultCode.MESSAGE_NOT_FOUND
         | MessageDependencyResolveResultCode.MESSAGE_DEPENDENCY_RESOLVED
@@ -21,7 +21,7 @@ export type MessageDependencyResolveResult =
     | MessageDependencyResolveResultMessageDependencyResolved
 
 export const messageDependencyResolveParseQueryResult = (
-    result: QueryResult
+    result: MessageDependencyResolveQueryResult
 ): MessageDependencyResolveResult => {
     if (result.o_result_code === MessageDependencyResolveResultCode.MESSAGE_NOT_FOUND) {
         return { resultType: "MESSAGE_NOT_FOUND" }
@@ -43,6 +43,6 @@ export const messageDependencyResolve = async (params: {
             ${valueNode(params.id)},
             ${valueNode(params.isSuccess)}
         )
-    `).then(res => res.rows[0]) as QueryResult
+    `).then(res => res.rows[0]) as MessageDependencyResolveQueryResult
     return messageDependencyResolveParseQueryResult(result)
 }

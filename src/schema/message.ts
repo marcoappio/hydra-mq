@@ -29,12 +29,21 @@ export const messageInstall = (params: {
             num_dependencies INTEGER NOT NULL,
             num_dependencies_failed INTEGER NOT NULL,
             dependency_failure_cascade BOOLEAN NOT NULL,
+            sweep_after TIMESTAMP,
             created_at TIMESTAMP,
             waiting_at TIMESTAMP,
             locked_at TIMESTAMP,
             PRIMARY KEY (id)
         );
     `,
+
+    sql `
+        CREATE INDEX message_sweep_ix
+        ON ${params.schema}.message (
+            sweep_after ASC
+        ) WHERE status = ${valueNode(MessageStatus.PROCESSING)}
+    `,
+
 
     sql `
         CREATE INDEX message_dequeue_ix

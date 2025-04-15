@@ -2,20 +2,6 @@ import type { DatabaseClient } from "@src/core/database-client"
 import { arrayNode, refNode, sql, valueNode } from "@src/core/sql"
 import { MessageEnqueueResultCode } from "@src/schema/message-enqueue/install"
 
-export type MessageEnqueueResultMessageEnqueued = {
-    messageId: string
-    resultType: "MESSAGE_ENQUEUED"
-}
-
-export type MessageEnqueueResultMessageDeduplicated = {
-    messageId: string
-    resultType: "MESSAGE_DEDUPLICATED"
-}
-
-export type MessageEnqueueResultMessageDependencyNotFound = {
-    resultType: "MESSAGE_DEPENDENCY_NOT_FOUND"
-}
-
 type QueryResultMessageEnqueued = {
     o_id: string
     o_result_code: MessageEnqueueResultCode.MESSAGE_ENQUEUED
@@ -31,17 +17,31 @@ type QueryResultMessageDependencyNotFound = {
     o_result_code: MessageEnqueueResultCode.MESSAGE_DEPENDENCY_NOT_FOUND
 }
 
+export type MessageEnqueueResultMessageEnqueued = {
+    messageId: string
+    resultType: "MESSAGE_ENQUEUED"
+}
+
+export type MessageEnqueueResultMessageDeduplicated = {
+    messageId: string
+    resultType: "MESSAGE_DEDUPLICATED"
+}
+
+export type MessageEnqueueResultMessageDependencyNotFound = {
+    resultType: "MESSAGE_DEPENDENCY_NOT_FOUND"
+}
+
 export type MessageEnqueueResult =
     | MessageEnqueueResultMessageEnqueued
     | MessageEnqueueResultMessageDeduplicated
     | MessageEnqueueResultMessageDependencyNotFound
 
-type QueryResult =
+export type MessageEnqueueQueryResult =
     | QueryResultMessageEnqueued
     | QueryResultMessageUpdated
     | QueryResultMessageDependencyNotFound
 
-export const messageEnqueueParseQueryResult = (result : QueryResult): MessageEnqueueResult => {
+const messageEnqueueParseQueryResult = (result : MessageEnqueueQueryResult): MessageEnqueueResult => {
     if (result.o_result_code === MessageEnqueueResultCode.MESSAGE_ENQUEUED) {
         return { messageId: result.o_id, resultType: "MESSAGE_ENQUEUED" }
     } else if (result.o_result_code === MessageEnqueueResultCode.MESSAGE_DEDUPLICATED) {
@@ -84,7 +84,7 @@ export const messageEnqueue = async (params: {
             ${arrayNode(params.dependsOn)}::UUID[],
             ${valueNode(params.dependencyFailureCascade)}
         )
-    `).then(res => res.rows[0]) as QueryResult
+    `).then(res => res.rows[0]) as MessageEnqueueQueryResult
 
     return messageEnqueueParseQueryResult(result)
 }

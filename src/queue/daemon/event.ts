@@ -1,3 +1,4 @@
+import type { JobType } from "@src/schema/job"
 import type { MessageDequeueMessage } from "@src/schema/message-dequeue/binding"
 
 export type HydraEventMessageEnqueued = {
@@ -14,11 +15,11 @@ export type HydraEventMessageDeduplicated = {
     messageId: string
 }
 
-export type HydraEventMessageReleased = {
+export type HydraEventJobProcessed = {
     daemonId: string | null
-    eventType: "MESSAGE_RELEASED"
+    eventType: "JOB_PROCESSED"
+    jobType: keyof typeof JobType
     jobId: string
-    messageId: string
 }
 
 export type HydraEventMessageDequeued = {
@@ -65,32 +66,16 @@ export type HydraEventMessageLocked = {
     messageId: string
 }
 
-export type HydraEventMessageUnlocked = {
-    daemonId: string | null
-    eventType: "MESSAGE_UNLOCKED"
-    jobId: string
-    messageId: string
-}
-
-export type HydraEventMessageDependencyResolved = {
-    daemonId: string | null
-    eventType: "MESSAGE_DEPENDENCY_RESOLVED"
-    jobId: string
-    messageId: string
-}
-
 export type HydraEvent =
     | HydraEventMessageEnqueued
     | HydraEventMessageDeduplicated
-    | HydraEventMessageReleased
     | HydraEventMessageDequeued
     | HydraEventMessageProcessedSuccess
     | HydraEventMessageProcessedFail
     | HydraEventMessageLocked
-    | HydraEventMessageUnlocked
     | HydraEventMessageFinalized
-    | HydraEventMessageDependencyResolved
     | HydraEventMessageDependenciesUnmet
     | HydraEventMessageAttemptsExhausted
+    | HydraEventJobProcessed
 
 export type HydraEventHandler = (event: HydraEvent) => void

@@ -2,7 +2,7 @@ import type { DatabaseClient } from "@src/core/database-client"
 import { refNode, sql, valueNode } from "@src/core/sql"
 import { MessageReleaseResultCode } from "@src/schema/message-release/install"
 
-type QueryResult = {
+export type QueryResult = {
     o_result_code:
         | MessageReleaseResultCode.MESSAGE_NOT_FOUND
         | MessageReleaseResultCode.MESSAGE_RELEASED
@@ -12,15 +12,15 @@ export type MessageReleaseResultMessageReleased = {
     resultType: "MESSAGE_RELEASED"
 }
 
-export type MessageReleaseResultMessageNotFound = {
+export type MessageReleaseMessageNotFound = {
     resultType: "MESSAGE_NOT_FOUND"
 }
 
 export type MessageReleaseResult =
     | MessageReleaseResultMessageReleased
-    | MessageReleaseResultMessageNotFound
+    | MessageReleaseMessageNotFound
 
-export const messageReleaseParseQueryResult = (result: QueryResult): MessageReleaseResult => {
+const messageReleaseParseQueryResult = (result: QueryResult): MessageReleaseResult => {
     if (result.o_result_code === MessageReleaseResultCode.MESSAGE_NOT_FOUND) {
         return { resultType: "MESSAGE_NOT_FOUND" }
     } else if (result.o_result_code === MessageReleaseResultCode.MESSAGE_RELEASED) {
