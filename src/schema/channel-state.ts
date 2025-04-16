@@ -13,9 +13,7 @@ export const channelStateInstall = (params: {
             next_message_id UUID,
             next_priority INTEGER,
             dequeued_at TIMESTAMP,
-            PRIMARY KEY (id),
-            FOREIGN KEY (next_message_id) 
-                REFERENCES ${params.schema}.message (id)
+            PRIMARY KEY (id)
         );
     `,
 
