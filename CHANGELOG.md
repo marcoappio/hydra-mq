@@ -1,3 +1,15 @@
+# v0.6.5 (Thu Apr 17 2025)
+
+#### 🐛 Bug Fix
+
+- Fix deduplication deadlock [#34](https://github.com/marcoappio/hydra-mq/pull/34) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.6.4 (Wed Apr 16 2025)
 
 #### 🐛 Bug Fix
