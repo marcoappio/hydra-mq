@@ -8,7 +8,7 @@ type QueryResultMessageEnqueued = {
 }
 
 type QueryResultMessageUpdated = {
-    o_id: string
+    o_id: null
     o_result_code: MessageEnqueueResultCode.MESSAGE_DEDUPLICATED
 }
 
@@ -23,7 +23,6 @@ export type MessageEnqueueResultMessageEnqueued = {
 }
 
 export type MessageEnqueueResultMessageDeduplicated = {
-    messageId: string
     resultType: "MESSAGE_DEDUPLICATED"
 }
 
@@ -45,7 +44,7 @@ const messageEnqueueParseQueryResult = (result : MessageEnqueueQueryResult): Mes
     if (result.o_result_code === MessageEnqueueResultCode.MESSAGE_ENQUEUED) {
         return { messageId: result.o_id, resultType: "MESSAGE_ENQUEUED" }
     } else if (result.o_result_code === MessageEnqueueResultCode.MESSAGE_DEDUPLICATED) {
-        return { messageId: result.o_id, resultType: "MESSAGE_DEDUPLICATED" }
+        return { resultType: "MESSAGE_DEDUPLICATED" }
     } else if (result.o_result_code === MessageEnqueueResultCode.MESSAGE_DEPENDENCY_NOT_FOUND) {
         return { resultType: "MESSAGE_DEPENDENCY_NOT_FOUND" }
     } else {

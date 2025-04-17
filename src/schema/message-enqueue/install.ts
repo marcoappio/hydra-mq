@@ -34,7 +34,6 @@ export const messageEnqueueInstall = (params: {
                 v_now TIMESTAMP;
                 v_process_after TIMESTAMP;
                 v_channel_name TEXT;
-                v_message_id UUID;
                 v_parent_id UUID;
                 v_parent RECORD;
                 v_message RECORD;
@@ -42,7 +41,6 @@ export const messageEnqueueInstall = (params: {
                 v_normalized_deps UUID[];
             BEGIN
                 v_now := NOW();
-                v_message_id := GEN_RANDOM_UUID();
                 v_channel_name := COALESCE(p_channel_name, GEN_RANDOM_UUID()::TEXT);
 
                 v_normalized_deps := ARRAY(
@@ -65,7 +63,6 @@ export const messageEnqueueInstall = (params: {
                 END LOOP;
 
                 INSERT INTO ${params.schema}.message (
-                    id,
                     name,
                     channel_name,
                     payload,
@@ -83,7 +80,6 @@ export const messageEnqueueInstall = (params: {
                     dependency_failure_cascade,
                     created_at
                 ) VALUES (
-                    v_message_id,
                     p_name,
                     v_channel_name,
                     p_payload,
@@ -102,25 +98,25 @@ export const messageEnqueueInstall = (params: {
                     v_now
                 ) ON CONFLICT (name) 
                 WHERE NOT is_processed
-                DO UPDATE SET
-                    id = ${params.schema}.message.id
+                DO NOTHING
                 RETURNING id, num_dependencies
                 INTO v_message;
+
+                IF v_message IS NULL THEN
+                    RETURN QUERY SELECT 
+                        ${valueNode(MessageEnqueueResultCode.MESSAGE_DEDUPLICATED)}, 
+                        ${valueNode(null)}::UUID;
+                    RETURN;
+                END IF;
 
                 INSERT INTO ${params.schema}.message_dependency (
                     parent_message_id,
                     child_message_id
                 ) SELECT
                     parent_id,
-                    v_message_id
+                    v_message.id
                 FROM UNNEST(v_normalized_deps) AS parent_id;
 
-                IF v_message.id != v_message_id THEN
-                    RETURN QUERY SELECT 
-                        ${valueNode(MessageEnqueueResultCode.MESSAGE_DEDUPLICATED)}, 
-                        v_message.id;
-                    RETURN;
-                END IF;
 
                 IF v_message.num_dependencies = 0 THEN
                     PERFORM ${params.schema}.job_message_release_enqueue(

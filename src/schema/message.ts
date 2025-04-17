@@ -13,7 +13,7 @@ export const messageInstall = (params: {
 }) => [
     sql `
         CREATE TABLE ${params.schema}.message (
-            id UUID NOT NULL,
+            id UUID NOT NULL DEFAULT GEN_RANDOM_UUID(),
             name TEXT,
             channel_name TEXT NOT NULL,
             payload TEXT NOT NULL,
