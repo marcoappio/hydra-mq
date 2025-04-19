@@ -1,73 +1,78 @@
-import type { JobType } from "@src/schema/job"
-import type { MessageDequeueMessage } from "@src/schema/message-dequeue/binding"
-
-export type HydraEventMessageEnqueued = {
-    daemonId: string | null
-    eventType: "MESSAGE_ENQUEUED"
-    jobId: string
+export type HydraEventMessageAccepted = {
+    eventType: "MESSAGE_ACCEPTED"
     messageId: string
 }
 
-export type HydraEventJobProcessed = {
-    daemonId: string | null
-    eventType: "JOB_PROCESSED"
-    jobType: keyof typeof JobType
-    jobId: string
-}
-
-export type HydraEventMessageDequeued = {
-    daemonId: string | null
-    eventType: "MESSAGE_DEQUEUED"
-    message: MessageDequeueMessage
-}
-
-export type HydraEventMessageProcessedSuccess = {
-    daemonId: string | null
-    eventType: "MESSAGE_PROCESSED_SUCCESS"
+export type HydraEventMessageDropped = {
+    eventType: "MESSAGE_DROPPED"
     messageId: string
 }
 
-export type HydraEventMessageProcessedFail = {
-    daemonId: string | null
-    eventType: "MESSAGE_PROCESSED_FAIL"
+export type HydraEventMessageDeduplicated = {
+    eventType: "MESSAGE_DEDUPLICATED"
     messageId: string
-    error: any
-}
-
-export type HydraEventMessageDependenciesUnmet = {
-    daemonId: string | null
-    eventType: "MESSAGE_DEPENDENCIES_UNMET"
-    messageId: string
-}
-
-export type HydraEventMessageAttemptsExhausted = {
-    daemonId: string | null
-    eventType: "MESSAGE_ATTEMPTS_EXHAUSTED"
-    messageId: string
-}
-
-export type HydraEventMessageFinalized = {
-    daemonId: string | null
-    eventType: "MESSAGE_FINALIZED"
-    messageId: string,
-    isSuccess: boolean
 }
 
 export type HydraEventMessageLocked = {
-    daemonId: string | null
     eventType: "MESSAGE_LOCKED"
+    messageId: string,
+    error?: any
+}
+
+export type HydraEventMessageExhausted = {
+    eventType: "MESSAGE_EXHAUSTED"
+    messageId: string
+    error?: any
+}
+
+export type HydraEventMessageUnsatisfied = {
+    eventType: "MESSAGE_UNSATISFIED"
+    messageId: string
+}
+
+export type HydraEventMessageSweptMany = {
+    eventType: "MESSAGE_SWEPT_MANY"
+    messageIds: string[]
+}
+
+export type HydraEventMessageDependencyResolved = {
+    eventType: "MESSAGE_DEPENDENCY_RESOLVED"
+    messageId: string
+}
+
+export type HydraEventMessageEnqueued = {
+    eventType: "MESSAGE_ENQUEUED"
+    messageId: string
+}
+
+export type HydraEventMessageDeleted = {
+    eventType: "MESSAGE_DELETED"
+    messageId: string
+}
+
+export type HydraEventMessageCompleted = {
+    eventType: "MESSAGE_COMPLETED"
+    messageId: string
+}
+
+export type HydraEventMessageDequeued = {
+    eventType: "MESSAGE_DEQUEUED"
     messageId: string
 }
 
 export type HydraEvent =
-    | HydraEventMessageEnqueued
     | HydraEventMessageDequeued
-    | HydraEventMessageProcessedSuccess
-    | HydraEventMessageProcessedFail
+    | HydraEventMessageCompleted
+    | HydraEventMessageAccepted
+    | HydraEventMessageDropped
+    | HydraEventMessageDeduplicated
     | HydraEventMessageLocked
-    | HydraEventMessageFinalized
-    | HydraEventMessageDependenciesUnmet
-    | HydraEventMessageAttemptsExhausted
-    | HydraEventJobProcessed
+    | HydraEventMessageExhausted
+    | HydraEventMessageUnsatisfied
+    | HydraEventMessageSweptMany
+    | HydraEventMessageEnqueued
+    | HydraEventMessageDeleted
+    | HydraEventMessageDependencyResolved
+
 
 export type HydraEventHandler = (event: HydraEvent) => void

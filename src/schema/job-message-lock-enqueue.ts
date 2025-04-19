@@ -7,30 +7,24 @@ export const jobMessageLockEnqueueInstall = (params: {
     return [
         sql `
             CREATE FUNCTION ${params.schema}.job_message_lock_enqueue(
-                p_message_id UUID
+                p_id UUID
             ) RETURNS VOID AS $$
             DECLARE
                 v_now TIMESTAMP;
-                v_job RECORD;
+                v_params JSONB;
             BEGIN
                 v_now := NOW();
+                v_params := JSONB_BUILD_OBJECT('id', p_id);
                 INSERT INTO ${params.schema}.job (
                     type,
+                    params,
                     is_recurring,
                     process_after
                 ) VALUES (
-                    ${valueNode(JobType.MESSAGE_LOCK)},
+                    ${valueNode(JobType.MESSAGE_FAIL)},
+                    v_params,
                     ${valueNode(false)},
                     v_now
-                ) RETURNING id
-                INTO v_job;
-
-                INSERT INTO ${params.schema}.job_message_lock_params (
-                    job_id,
-                    message_id
-                ) VALUES (
-                    v_job.id,
-                    p_message_id
                 );
             END;
             $$ LANGUAGE plpgsql;

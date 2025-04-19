@@ -1,7 +1,7 @@
-import { MESSAGE_DEFAULT_NUM_ATTEMPTS, MESSAGE_DEFAULT_PRIORITY, MESSAGE_DEFAULT_PROCESSING_SECS, MESSAGE_DEFAULT_LOCK_SECS, MESSAGE_DEFAULT_NAME, MESSAGE_DEFAULT_DELAY_SECS, MESSAGE_DEFAULT_LOCK_SECS_FACTOR } from "@src/core/config"
+import { MESSAGE_DEFAULT_NUM_ATTEMPTS, MESSAGE_DEFAULT_PRIORITY, MESSAGE_DEFAULT_PROCESSING_MS, MESSAGE_DEFAULT_LOCK_MS, MESSAGE_DEFAULT_NAME, MESSAGE_DEFAULT_DELAY_MS, MESSAGE_DEFAULT_LOCK_MS_FACTOR } from "@src/core/config"
 import type { DatabaseClient } from "@src/core/database-client"
-import { jobMessageEnqueueScheduleClear } from "@src/schema/job-message-enqueue-schedule-clear/binding"
-import { jobMessageEnqueueScheduleSet } from "@src/schema/job-message-enqueue-schedule-set/binding"
+import { jobMessageEnqueueScheduleClear } from "@src/binding/job-message-enqueue-schedule-clear"
+import { jobMessageEnqueueScheduleSet } from "@src/binding/job-message-enqueue-schedule-set"
 import { createHash } from "crypto"
 
 export const getUniqueJobName = (params: {
@@ -41,10 +41,10 @@ export class MessageScheduleModule {
         payload: string
         priority?: number
         channelPriority?: number
-        lockSecs?: number
-        maxProcessingSecs?: number
-        lockSecsFactor?: number
-        delaySecs?: number
+        lockMs?: number
+        maxProcessingMs?: number
+        lockMsFactor?: number
+        delayMs?: number
     }) {
         return jobMessageEnqueueScheduleSet({
             cronExpr: params.cronExpr,
@@ -58,10 +58,10 @@ export class MessageScheduleModule {
                 priority: params.priority ?? MESSAGE_DEFAULT_PRIORITY,
                 channelPriority: params.channelPriority ?? MESSAGE_DEFAULT_PRIORITY,
                 numAttempts: params.numAttempts ?? MESSAGE_DEFAULT_NUM_ATTEMPTS,
-                maxProcessingSecs: params.maxProcessingSecs ?? MESSAGE_DEFAULT_PROCESSING_SECS,
-                lockSecs: params.lockSecs ?? MESSAGE_DEFAULT_LOCK_SECS,
-                lockSecsFactor: params.lockSecsFactor ?? MESSAGE_DEFAULT_LOCK_SECS_FACTOR,
-                delaySecs: params.delaySecs ?? MESSAGE_DEFAULT_DELAY_SECS,
+                maxProcessingMs: params.maxProcessingMs ?? MESSAGE_DEFAULT_PROCESSING_MS,
+                lockMs: params.lockMs ?? MESSAGE_DEFAULT_LOCK_MS,
+                lockMsFactor: params.lockMsFactor ?? MESSAGE_DEFAULT_LOCK_MS_FACTOR,
+                delayMs: params.delayMs ?? MESSAGE_DEFAULT_DELAY_MS,
             }
         })
     }

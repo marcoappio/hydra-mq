@@ -11,25 +11,19 @@ export const jobMessageUnlockEnqueueInstall = (params: {
                 p_process_after TIMESTAMP
             ) RETURNS VOID AS $$
             DECLARE
-                v_job RECORD;
+                v_params JSONB;
             BEGIN
+                v_params := JSONB_BUILD_OBJECT('id', p_message_id);
                 INSERT INTO ${params.schema}.job (
                     type,
+                    params,
                     is_recurring,
                     process_after
                 ) VALUES (
                     ${valueNode(JobType.MESSAGE_UNLOCK)},
+                    v_params,
                     ${valueNode(false)},
                     p_process_after
-                ) RETURNING id
-                INTO v_job;
-
-                INSERT INTO ${params.schema}.job_message_unlock_params (
-                    job_id,
-                    message_id
-                ) VALUES (
-                    v_job.id,
-                    p_message_id
                 );
             END;
             $$ LANGUAGE plpgsql;

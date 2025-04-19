@@ -3,8 +3,6 @@
 </div>
 <br/>
 
-**N.B. Docs are a Work in Progress. HydraMQ is NOT ready for production use. Check back later!!**
-
 A high performance Postgres message queue implementation for NodeJs/TypeScript. 
 
 Documentation available at: [hydra-mq.marcoapp.io](https://hydra-mq.marcoapp.io/).
@@ -14,12 +12,15 @@ Documentation available at: [hydra-mq.marcoapp.io](https://hydra-mq.marcoapp.io/
   - High throughput.
   - Fine-grained settings for multi-tenancy concurrency and size.
   - Scheduled/repeating messages.
-  - Prioritized messages.
-  - Retryable messages with customizable timeout and back-off strategies.
+  - Inter-tenant *and* intra-tenant message prioritization options.
+  - Retryable messages with customizable timeout and back-off strategy.
   - Delayed messages.
-  - Message dependencies/flows with cascading failures.
+  - Message deduplication.
+  - Arbitrary message dependency DAGs with optional cascading failures.
   - Message enqueuing within *existing* database transactions.
+  - Deadlock proof.
   - DB client agnostic.
+  - A rich event system.
   - Zero dependencies.
 
 ## Quick Look
@@ -68,36 +69,47 @@ N.B. the set of SQL commands generated is **not** idempotent and thus it is stro
 
 ## Channels
 
-Channels provide multi-tenancy support within HydraMQ. They can be thought of us as lightweight or "micro" queues that messages are read from in a round-robin fashion (unless explicit message priorities dictates otherwise). There is no performance penalty associated with using channels, and can be assigned on a granular (per-user for example) basis to ensure fair scheduling of work. To enqueue a message within a specific channel, we simply run:
+Channels provide multi-tenancy support within HydraMQ. They can be thought of us as lightweight or "micro" queues that messages are read from in a round-robin fashion (unless explicit message priorities dictates otherwise). There is no performance penalty associated with using channels, and thus can be assigned on a highly granular (per-user for example) basis to ensure fair scheduling of work. To enqueue a message within a specific channel, we simply run:
 
 ```typescript
-  await queue.channel("my-channel").message.enqueue({ payload: `Ping: ${i}`, databaseClient: pool })
+  await queue
+    .channel("my-channel")
+    .message
+    .enqueue({ 
+        payload: `Ping: ${i}`, 
+        databaseClient: pool 
+    })
 ```
  Channels can be configured to limit their max size (with messages being dropped when size limits are reached) *and* their max concurrency - ensuring _at most_ `n` jobs run globally at any one time. We do this by defining a "Channel Policy" which can be set and removed by running:
 
 ```typescript
   // N.B. null parameters mean 
-  await queue.channel("my-channel").policy.set({
-    maxConcurrency: 1,
-    databaseClient: pool,
-  })
+  await queue
+    .channel("my-channel")
+    .policy
+    .set({
+        maxConcurrency: 1,
+        maxSize: null,
+        databaseClient: pool,
+    })
 
-  await queue.channel("my-channel").policy.clear({
-    databaseClient: pool,
-  })
+  await queue
+    .channel("my-channel")
+    .policy
+    .clear({ databaseClient: pool })
 ```
 
-## Retyring failed messages
+## Retrying failed messages
 
-Messages can be given a retry policy to ensure that should processing fail, messages are re-attempted at a later date. We provide the `numAttempts`, `lockSecs` and `lockSecsFactor` arguments when enqueueing a message. `numAttempts` specifies the number of times processing can be attempted on a message. `lockSecs` specifies the amount of time a message is "locked" (and unavailable for attempted re-processing) after a failure and `lockSecsFactor` specifies the factor by which `lockSecs` is multiplied each time a message is locked. 
+Messages can be given a retry policy to ensure that should processing fail, messages are re-attempted at a later date. We provide the `numAttempts`, `lockMs` and `lockMsFactor` arguments when enqueueing a message. `numAttempts` specifies the number of times processing can be attempted on a message. `lockMs` specifies the amount of time a message is "locked" (and unavailable for attempted re-processing) after a failure and `lockMsFactor` specifies the factor by which `lockMs` is multiplied each time a message is locked. 
 
 ```typescript
 await queue.message.enqueue({
   payload: "hello world",
   databaseClient: pool,
   numAttempts: 5,
-  lockSecs: 5,
-  lockSecsFactor: 2 // Double the lock time after each failure.
+  lockMs: 5,
+  lockMsFactor: 2 // Double the lock time after each failure.
 })
 ```
 
@@ -106,12 +118,29 @@ await queue.message.enqueue({
 Messages can be prioritized. This will push messages to the "front" of their respective channel - as well as override the usual round-robin fashion in which messages are dequeued from channels. Messages with no explciit priority are assumed to be of the lowest priority.
 
 ```typescript
-await queue.message.enqueue({
-  message: "hello world",
-  databaseClient: pool,
-  priority: 10,
-})
+await queue
+    .message
+    .enqueue({
+        message: "hello world",
+        databaseClient: pool,
+        priority: 10,
+    })
 ```
+
+If you wish to prioritize work _within_ a particular channel without disrupting the expected round-robin scheduling, you can specify a `channelPriority` when your message is enqueued:
+
+```typescript
+await queue
+    .message
+    .enqueue({
+        message: "hello world",
+        databaseClient: pool,
+        priority: 10,
+        channelPriority: 3
+    })
+```
+
+Workers dequeueing messages for processing will ignore `channelPriority` entirely - however, when deciding which message should be at the head of the channel, a lexicographical sort is performed using both `priority` and then `channelPriority`.
 
 ## De-duplicating messages
 
@@ -164,11 +193,11 @@ N.B. Schedule names are scoped to their channel, and thus both the queue-level a
 
 ## Adding dependencies to messages
 
-We can enqueue messages that run according to an arbitrary dependency DAG. We do this by providing a `dependsOn` parameter that takes an array of message ids. 
+We can enqueue messages that run according to an arbitrary dependency DAG. We do this by providing a `dependsOn` parameter that takes an array of message ids.
 
-Only messages in their starting state can be referenced. An attempt to "depend" on a job that has progressed will result in the enqueue failing. To prevent this from happening, it is strongly encouraged that you construct the DAG within an explicit database transaction.
+Only messages in their starting state can be referenced. Any attempt to "depend" on a message that has transitioned beyond said starting state will result in a `DEPENDENCY_NOT_FOUND` result, with the enqueue ultimately failing. Thus, it is _strongly_ recommended that any dependency DAG is constructed within a single transaction - to ensure no state transitions occur.
 
-If any message in the DAG fails to process, its failure will transitively propagate to all of its descendents.
+If any message in the DAG fails to process, its failure will transitively propagate to all of its descendents. This cascading failure behaviour can be overridden by specifying a `dependencyFailureCascade` parameter when enqueuing:
 
 ```typescript
 const client = await pool.connect()
@@ -181,14 +210,14 @@ try {
     })
 
     if(parentMessage.resultType !== "MESSAGE_ENQUEUED") {
-        // Perhaps it was deduplicated?
         throw new Error("Message failed to enqueue")
     }
 
     const childMessage = queue.message.enqueue({
         databaseClient: client,
         payload: "child",
-        dependsOn: [parentMessage.messageId]
+        dependsOn: [parentMessage.messageId],
+        dependencyFailureCascade: false // Now this message won't necessarily fail if its parent does.
     })
 
     await client.query("COMMIT")
@@ -201,7 +230,7 @@ try {
 
 ## Processors
 
-Processor daemons dequeue messages from the queue and perform work on them as per the `processorFn`. By default a processor will wait until it finishes processing a message before dequeuing another one. This behaviour can be changed by setting `executionSlots` to a number larger than `1`. Message throughput can be further increased by spawning additional processors, allowing messages to be concurrently dequeued (which happens efficiently thanks to `SKIP LOCKED`).
+Processor daemons dequeue messages from the queue and perform work on them as per the `processorFn`. By default a processor will wait until it finishes processing a message before dequeuing another one. This behaviour can be changed by setting `executionSlots` to a number larger than `1`. Message throughput can be further increased by spawning multiple processors, allowing messages to be concurrently dequeued (which happens efficiently thanks to `SKIP LOCKED`).
 
 ```typescript
 const processor = deployment.daemon.processor({ 
@@ -223,7 +252,7 @@ Coordinator and Processor daemons can be gracefully shutdown by awaiting their `
 
 Failure to gracefully shut down daemons (particularly processors) may result in messages being _stuck_ in an invalid `PROCESSING` state. In this state they will occupy a concurrency slot inside their queue - potentially causing blockages and reducing job throughput until the coordinator sweeps them away.
 
-The coordinator will consider messages _stuck_ if they have existed in a `PROCESSING` state for longer than `maxProcessingSecs` - which can be defined on a per-message basis when enqueueing. Make sure you set this value such that it is larger than any potential processing time for the given message (by default it is set to 1 hour).
+The coordinator will consider messages _stuck_ if they have existed in a `PROCESSING` state for longer than `maxProcessingMs` - which can be defined on a per-message basis when enqueueing. Make sure you set this value such that it is larger than any potential processing time for the given message (by default it is set to 1 hour).
 
 ## Other Database Clients
 
@@ -249,19 +278,18 @@ HydraMQ daemons emit the following events:
 
 | Event Type | Description |
 | ----------|-------------|
-| `MESSAGE_ENQUEUED` | A scheduled message has been enqueued by the scheduler.
-| `MESSAGE_RELEASED` | A message has been "released" for processing (it has no outstanding dependencies and any initial delay has elapsed) by the scheduler. |
-| `MESSAGE_DROPPED` | A message has been dropped due to its channel's max size constraint being violated. |
 | `MESSAGE_DEQUEUED` | A message has been dequeued for processing. |
-| `MESSAGE_PROCESSED_SUCCESS` | Attempted processing of a message has succeeded. |
-| `MESSAGE_PROCESSED_FAIL` | Attempted processing of a message has failed. |
-| `MESSAGE_LOCKED` | Due to a processing failure, a message has been temporarily moved to a "locked" state to prevent further reprocessing. |
-| `MESSAGE_UNLOCKED` | A previously locked message has been unlocked and is now again ready for attempted processing. |
-| `MESSAGE_FINALIZED` | A message has transitioned to a post-processing state awaiting deletion. |
-| `MESSAGE_DELETED` | A message has been truly deleted from the database. |
-| `MESSAGE_DEPENDENCY_RESOLGVED` | A message's dependency has resolved (either a success or fail). |
-| `MESSAGE_DEPENDENCIES_UNMET` | A dequeued message will not be processed due to a failure of one of its parents.
-| `MESSAGE_ATTEMPTS_EXHAUSTED` | A dequeued message will not be processed as there are no attempts remaining.
+| `MESSAGE_COMPLETED` | A message has been removed from the queue after processing succeeded. |
+| `MESSAGE_ACCEPTED` | An enqueued message has been accepted into the queue. |
+| `MESSAGE_DROPPED` | An enequeued message has been rejected from the queue due to channel capacity constraints. |
+| `MESSAGE_UNSATISFIED` | A message has been rejected from the queue due to unmet message dependencies. |
+| `MESSAGE_DEDUPLICATED` | An enqueued message has been rejected from the queue due to message deduplication. |
+| `MESSAGE_LOCKED` | A message has been moved into a locked state after a processing failure. |
+| `MESSAGE_EXHAUSTED` | A message has been removed from the queue after running out of attempts to be processed. |
+| `MESSAGE_SWEPT_MANY` | Some non-zero number of messages that are "stalled" have been marked for clean-up. |
+| `MESSAGE_ENQUEUED` | A scheduled message has been enqueued. |
+| `MESSAGE_DELETED` | A message that has either been rejected or removed from the queue has been deleted from the database. |
+| `MESSAGE_DEPENDENCY_RESOLVED` | A message with outstanding dependencies has had one of its dependencies resolved. |
 
 These events can be subscribed to by passing an event handler to the queue:
 
