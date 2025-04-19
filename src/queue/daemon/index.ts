@@ -1,4 +1,4 @@
-import { DAEMON_PROCESSOR_DEFAULT_EXECUTION_SLOTS, DAEMON_PROCESSOR_DEFAULT_TIMEOUT_SECS } from "@src/core/config"
+import { DAEMON_PROCESSOR_DEFAULT_EXECUTION_SLOTS, DAEMON_PROCESSOR_DEFAULT_TIMEOUT_MS } from "@src/core/config"
 import type { DatabaseClient } from "@src/core/database-client"
 import type { HydraEvent, HydraEventHandler } from "@src/queue/daemon/event"
 import { DaemonProcessor } from "@src/queue/daemon/processor"
@@ -28,34 +28,30 @@ export class QueueDaemonModule {
     }
 
     coordinator(params: {
-        daemonId?: string
         databaseClient: DatabaseClient
-        timeoutSecs?: number
+        timeoutMs?: number
     }) {
         return new DaemonCoordinator({
-            daemonId: params.daemonId ?? null,
             databaseClient: params.databaseClient,
             eventHandler: (event) => this.eventHandler(event),
             schema: this.schema,
-            timeoutSecs: params.timeoutSecs ?? DAEMON_PROCESSOR_DEFAULT_TIMEOUT_SECS,
+            timeoutMs: params.timeoutMs ?? DAEMON_PROCESSOR_DEFAULT_TIMEOUT_MS,
         })
     }
 
     processor(params: {
-        daemonId?: string
         databaseClient: DatabaseClient
         executionSlots?: number
         processorFn: ProcessorFn
-        timeoutSecs?: number
+        timeoutMs?: number
     }) {
         return new DaemonProcessor({
-            daemonId: params.daemonId ?? null,
             databaseClient: params.databaseClient,
             eventHandler: (event) => this.eventHandler(event),
             executionSlots: params.executionSlots ?? DAEMON_PROCESSOR_DEFAULT_EXECUTION_SLOTS,
             processorFn: params.processorFn,
             schema: this.schema,
-            timeoutSecs: params.timeoutSecs ?? DAEMON_PROCESSOR_DEFAULT_TIMEOUT_SECS,
+            timeoutMs: params.timeoutMs ?? DAEMON_PROCESSOR_DEFAULT_TIMEOUT_MS,
         })
     }
 

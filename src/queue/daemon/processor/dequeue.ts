@@ -2,20 +2,15 @@ import type { DatabaseClient } from "@src/core/database-client"
 import { EggTimer } from "@src/core/egg-timer"
 import { Semaphore } from "@src/core/semaphore"
 import type { HydraEventHandler } from "@src/queue/daemon/event"
-import { messageDequeue, type MessageDequeueMessage } from "@src/schema/message-dequeue/binding"
+import { messageDequeue, type MessageDequeueResultMessageDequeued } from "@src/binding/message-dequeue"
 
 type DequeueResultEndSignal = {
     resultType: "END_SIGNAL"
 }
 
-type DequeueResultMessage = {
-    resultType: "MESSAGE_DEQUEUED",
-    message: MessageDequeueMessage
-}
-
 type DequeueResult =
     | DequeueResultEndSignal
-    | DequeueResultMessage
+    | MessageDequeueResultMessageDequeued
 
 type RequestCallback = (result: DequeueResult) => void
 
@@ -23,30 +18,27 @@ export class DaemonProcessorDequeueModule {
 
     private readonly databaseClient: DatabaseClient
     private readonly schema: string
-    private readonly timeoutSecs: number
+    private readonly timeoutMs: number
     private readonly eggTimer: EggTimer
     private readonly requestQueue: RequestCallback[]
     private readonly semaphore: Semaphore
     private readonly promise: Promise<void>
-    private readonly daemonId: string | null
     private readonly eventHandler: HydraEventHandler | null
 
     private shouldStop: boolean
 
     constructor(params: {
-        daemonId: string | null
         databaseClient: DatabaseClient
         eventHandler: HydraEventHandler | null
         schema: string
-        timeoutSecs: number
+        timeoutMs: number
     }) {
         this.schema = params.schema
         this.semaphore = new Semaphore(0)
-        this.timeoutSecs = params.timeoutSecs
+        this.timeoutMs = params.timeoutMs
         this.databaseClient = params.databaseClient
         this.eggTimer = new EggTimer(() => this.semaphore.release())
         this.eventHandler = params.eventHandler
-        this.daemonId = params.daemonId
         this.requestQueue = []
         this.shouldStop = false
         this.promise = this.run()
@@ -65,14 +57,13 @@ export class DaemonProcessorDequeueModule {
             })
 
             if (dequeueResult.resultType === "QUEUE_EMPTY") {
-                this.eggTimer.set(this.timeoutSecs * 1_000)
+                this.eggTimer.set(this.timeoutMs)
                 await this.semaphore.acquire()
                 continue
             } else if (this.eventHandler) {
                 this.eventHandler({
-                    daemonId: this.daemonId,
                     eventType: "MESSAGE_DEQUEUED",
-                    message: dequeueResult.message,
+                    messageId: dequeueResult.message.id,
                 })
             }
 

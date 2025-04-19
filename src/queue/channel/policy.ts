@@ -1,6 +1,6 @@
 import type { DatabaseClient } from "@src/core/database-client"
-import { channelPolicyClear } from "@src/schema/channel-policy-clear/binding"
-import { channelPolicySet } from "@src/schema/channel-policy-set/binding"
+import { channelPolicyClear } from "@src/binding/channel-policy-clear"
+import { channelPolicySet } from "@src/binding/channel-policy-set"
 
 export class ChannelPolicyModule {
 
@@ -18,10 +18,12 @@ export class ChannelPolicyModule {
     async set(params: {
         databaseClient: DatabaseClient
         maxConcurrency: number | null
+        maxSize: number | null
     }) {
         return channelPolicySet({
             databaseClient: params.databaseClient,
             maxConcurrency: params.maxConcurrency,
+            maxSize: params.maxSize,
             name: this.channel,
             schema: this.schema,
         })

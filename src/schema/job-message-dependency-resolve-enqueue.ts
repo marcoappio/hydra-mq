@@ -7,33 +7,29 @@ export const jobMessageDependencyResolveEnqueueInstall = (params: {
     return [
         sql `
             CREATE FUNCTION ${params.schema}.job_message_dependency_resolve_enqueue(
-                p_message_id UUID,
+                p_id UUID,
                 p_is_success BOOLEAN
             ) RETURNS VOID AS $$
             DECLARE
                 v_now TIMESTAMP;
-                v_job RECORD;
+                v_params JSONB;
             BEGIN
                 v_now := NOW();
+                v_params = JSONB_BUILD_OBJECT(
+                    'id', p_id,
+                    'is_success', p_is_success
+                );
+
                 INSERT INTO ${params.schema}.job (
                     type,
+                    params,
                     is_recurring,
                     process_after
                 ) VALUES (
                     ${valueNode(JobType.MESSAGE_DEPENDENCY_RESOLVE)},
+                    v_params,
                     ${valueNode(false)},
                     v_now
-                ) RETURNING id
-                INTO v_job;
-
-                INSERT INTO ${params.schema}.job_message_dependency_resolve_params (
-                    job_id,
-                    message_id,
-                    is_success
-                ) VALUES (
-                    v_job.id,
-                    p_message_id,
-                    p_is_success
                 );
             END;
             $$ LANGUAGE plpgsql;

@@ -1,10 +1,15 @@
-import { type SqlRefNode, sql, valueNode } from "@src/core/sql"
+import { type SqlRefNode, sql } from "@src/core/sql"
 
 export enum MessageStatus {
     CREATED,
-    WAITING,
+    ACCEPTED,
+    DROPPED,
+    DEDUPLICATED,
+    UNSATISFIED,
     PROCESSING,
     LOCKED,
+    EXHAUSTED,
+    COMPLETED,
     FINALIZED
 }
 
@@ -20,10 +25,10 @@ export const messageInstall = (params: {
             priority INTEGER NULL,
             channel_priority INTEGER NULL,
             num_attempts INTEGER NOT NULL,
-            max_processing_secs REAL NOT NULL,
-            delay_secs REAL NOT NULL,
-            lock_secs REAL NOT NULL,
-            lock_secs_factor REAL NOT NULL,
+            max_processing_ms REAL NOT NULL,
+            delay_ms REAL NOT NULL,
+            lock_ms REAL NOT NULL,
+            lock_ms_factor REAL NOT NULL,
             status INTEGER NOT NULL,
             is_processed BOOLEAN NOT NULL,
             num_dependencies INTEGER NOT NULL,
@@ -31,34 +36,8 @@ export const messageInstall = (params: {
             dependency_failure_cascade BOOLEAN NOT NULL,
             sweep_after TIMESTAMP,
             created_at TIMESTAMP,
-            waiting_at TIMESTAMP,
-            locked_at TIMESTAMP,
+            accepted_at TIMESTAMP,
             PRIMARY KEY (id)
         );
-    `,
-
-    sql `
-        CREATE INDEX message_sweep_ix
-        ON ${params.schema}.message (
-            sweep_after ASC
-        ) WHERE status = ${valueNode(MessageStatus.PROCESSING)}
-    `,
-
-
-    sql `
-        CREATE INDEX message_dequeue_ix
-        ON ${params.schema}.message (
-            channel_name,
-            priority ASC NULLS FIRST,
-            channel_priority ASC NULLS FIRST,
-            waiting_at ASC
-        ) WHERE status = ${valueNode(MessageStatus.WAITING)}
-    `,
-
-    sql `
-        CREATE UNIQUE INDEX message_deduplication_ix
-        ON ${params.schema}.message (
-            name
-        ) WHERE NOT is_processed;
     `
 ]
