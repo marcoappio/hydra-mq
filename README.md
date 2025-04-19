@@ -5,7 +5,9 @@
 
 A high performance Postgres message queue implementation for NodeJs/TypeScript. 
 
-Documentation available at: [hydra-mq.marcoapp.io](https://hydra-mq.marcoapp.io/).
+Detailed API documentation available at: [hydra-mq.marcoapp.io](https://hydra-mq.marcoapp.io/).
+
+Join our discord if you have any questions/issues: [Marco Discord](https://discord.gg/JnX8KJpQJx)
 
 ## Features
 
@@ -69,7 +71,7 @@ N.B. the set of SQL commands generated is **not** idempotent and thus it is stro
 
 ## Channels
 
-Channels provide multi-tenancy support within HydraMQ. They can be thought of us as lightweight or "micro" queues that messages are read from in a round-robin fashion (unless explicit message priorities dictates otherwise). There is no performance penalty associated with using channels, and thus can be assigned on a highly granular (per-user for example) basis to ensure fair scheduling of work. To enqueue a message within a specific channel, we simply run:
+Channels provide multi-tenancy support within HydraMQ. They can be thought of as lightweight or "micro" queues that messages are read from in a round-robin fashion (unless explicit message priorities dictates otherwise). There is no performance penalty associated with using channels, and thus can be assigned on a highly granular (per-user for example) basis to ensure fair scheduling of work. To enqueue a message within a specific channel, we simply run:
 
 ```typescript
   await queue
@@ -80,7 +82,8 @@ Channels provide multi-tenancy support within HydraMQ. They can be thought of us
         databaseClient: pool 
     })
 ```
- Channels can be configured to limit their max size (with messages being dropped when size limits are reached) *and* their max concurrency - ensuring _at most_ `n` jobs run globally at any one time. We do this by defining a "Channel Policy" which can be set and removed by running:
+
+Channels can be configured to limit their maximum size. Messages will be dropped when size limits are reached. You can also limit their maximum concurrency, ensuring that _at most_ `n` jobs run globally at any one time. This is done by defining a "Channel Policy," which can be set and removed as follows:
 
 ```typescript
   // N.B. null parameters mean 
@@ -108,20 +111,20 @@ await queue.message.enqueue({
   payload: "hello world",
   databaseClient: pool,
   numAttempts: 5,
-  lockMs: 5,
+  lockMs: 5_000,
   lockMsFactor: 2 // Double the lock time after each failure.
 })
 ```
 
 ## Prioritizing messages
 
-Messages can be prioritized. This will push messages to the "front" of their respective channel - as well as override the usual round-robin fashion in which messages are dequeued from channels. Messages with no explciit priority are assumed to be of the lowest priority.
+Messages can be prioritized. This will push messages to the "front" of their respective channel - as well as override the usual round-robin fashion in which messages are dequeued from channels. Messages are ordered in *ASCENDING* order of their priority, with messages with no/null priority coming first.
 
 ```typescript
 await queue
     .message
     .enqueue({
-        message: "hello world",
+        payload: "hello world",
         databaseClient: pool,
         priority: 10,
     })
@@ -133,18 +136,22 @@ If you wish to prioritize work _within_ a particular channel without disrupting 
 await queue
     .message
     .enqueue({
-        message: "hello world",
+        payload: "hello world",
         databaseClient: pool,
         priority: 10,
         channelPriority: 3
     })
 ```
 
-Workers dequeueing messages for processing will ignore `channelPriority` entirely - however, when deciding which message should be at the head of the channel, a lexicographical sort is performed using both `priority` and then `channelPriority`.
+Workers dequeueing messages for processing will ignore `channelPriority` entirely - however, when deciding which message should be at the head of a particular channel, a lexicographical sort is performed using `priority` and then `channelPriority`.
 
 ## De-duplicating messages
 
-Messages can be de-duplicated by specifying a `name` argument when enqueued. If a message exists with a matching `name`, that is yet to be processed, then no new messagee will be enqueued. Once a message has been processed (at least once), it is no longer eligible for deduplication.
+Messages can be de-duplicated by specifying a `name` argument when enqueued. If a message exists with a matching `name`, that is yet to be processed, then the newly enqueued message will be rejected from the queue. 
+
+N.B. Once processing has been attempted on a message (even if it ultimately fails and remains within the queue for a retry), deduplication will no longer apply to that message. 
+
+This is a conscious design choice as it guarantees an instance of the message will be processed *AFTER* the enqueue is called.
 
 ```typescript
 await queue.message.enqueue({
@@ -281,7 +288,7 @@ HydraMQ daemons emit the following events:
 | `MESSAGE_DEQUEUED` | A message has been dequeued for processing. |
 | `MESSAGE_COMPLETED` | A message has been removed from the queue after processing succeeded. |
 | `MESSAGE_ACCEPTED` | An enqueued message has been accepted into the queue. |
-| `MESSAGE_DROPPED` | An enequeued message has been rejected from the queue due to channel capacity constraints. |
+| `MESSAGE_DROPPED` | An enqueued message has been rejected from the queue due to channel capacity constraints. |
 | `MESSAGE_UNSATISFIED` | A message has been rejected from the queue due to unmet message dependencies. |
 | `MESSAGE_DEDUPLICATED` | An enqueued message has been rejected from the queue due to message deduplication. |
 | `MESSAGE_LOCKED` | A message has been moved into a locked state after a processing failure. |
