@@ -1,3 +1,15 @@
+# v0.7.1 (Sat Apr 19 2025)
+
+#### 🐛 Bug Fix
+
+- more fixes to the docs [#36](https://github.com/marcoappio/hydra-mq/pull/36) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.7.0 (Sat Apr 19 2025)
 
 #### 🚀 Enhancement
