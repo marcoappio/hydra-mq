@@ -66,7 +66,7 @@ describe("messageDequeue", async () => {
             priority: 1,
             channelPriority: 1
         }) as MessageEnqueueResultMessageEnqueued
-        expect(secondEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        expect(thirdEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
 
         const fourthEnqueueResult = await messageEnqueue({
             databaseClient: pool,
