@@ -1,3 +1,15 @@
+# v0.7.3 (Sat Apr 19 2025)
+
+#### 🐛 Bug Fix
+
+- Scheduled Message Enqueue Type Casts [#38](https://github.com/marcoappio/hydra-mq/pull/38) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.7.2 (Sat Apr 19 2025)
 
 #### 🐛 Bug Fix
