@@ -1,3 +1,15 @@
+# v0.7.0 (Sat Apr 19 2025)
+
+#### 🚀 Enhancement
+
+- Deadlock Rewrite [#35](https://github.com/marcoappio/hydra-mq/pull/35) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.6.5 (Thu Apr 17 2025)
 
 #### 🐛 Bug Fix
