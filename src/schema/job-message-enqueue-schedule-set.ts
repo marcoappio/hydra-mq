@@ -26,7 +26,7 @@ export const jobMessageEnqueueScheduleSetInstall = (params: {
         RETURNS VOID AS $$
         DECLARE
             v_now TIMESTAMP;
-            v_next RECORD;
+            v_next TIMESTAMP;
             v_params JSONB;
         BEGIN
             v_now := NOW();
@@ -77,7 +77,7 @@ export const jobMessageEnqueueScheduleSetInstall = (params: {
                 p_cron_expr_days,
                 p_cron_expr_months,
                 p_cron_expr_days_of_week,
-                v_next.o_timestamp
+                v_next
             ) ON CONFLICT (type, name) 
             WHERE name IS NOT NULL
             DO UPDATE SET
