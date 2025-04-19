@@ -144,7 +144,7 @@ export const jobProcessInstall = (params : {
                         'message_id', v_message_id,
                         'result', ${params.schema}.message_dependency_resolve(
                             v_message_id,
-                            v_job.params->'is_success'
+                            (v_job.params->>'is_success')::BOOLEAN
                         )
                     );
                 ELSIF v_job.type = ${valueNode(JobType.MESSAGE_ENQUEUE)} THEN
@@ -154,15 +154,16 @@ export const jobProcessInstall = (params : {
                         'type', v_job.type,
                         'name', v_job.name,
                         'result', ${params.schema}.message_enqueue(
-                            v_job.params->'name',
-                            v_job.params->'channel_name',
-                            v_job.params->'payload',
-                            v_job.params->'priority',
-                            v_job.params->'channel_priority',
-                            v_job.params->'num_attempts',
-                            v_job.params->'lock_ms',
-                            v_job.params->'lock_ms_factor',
-                            v_job.params->'p_delay_ms',
+                            v_job.params->>'name',
+                            v_job.params->>'channel_name',
+                            v_job.params->>'payload',
+                            (v_job.params->>'priority')::INTEGER,
+                            (v_job.params->>'channel_priority')::INTEGER,
+                            (v_job.params->>'num_attempts')::INTEGER,
+                            (v_job.params->>'max_processing_ms')::INTEGER,
+                            (v_job.params->>'lock_ms')::INTEGER,
+                            (v_job.params->>'lock_ms_factor')::REAL,
+                            (v_job.params->>'delay_ms')::INTEGER,
                             ARRAY[]::UUID[],
                             TRUE
                         )
