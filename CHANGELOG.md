@@ -1,3 +1,15 @@
+# v0.7.2 (Sat Apr 19 2025)
+
+#### 🐛 Bug Fix
+
+- Cron iteration return types were wrong [#37](https://github.com/marcoappio/hydra-mq/pull/37) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.7.1 (Sat Apr 19 2025)
 
 #### 🐛 Bug Fix
