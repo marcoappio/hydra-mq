@@ -5,7 +5,7 @@
 
 A high performance Postgres message queue implementation for NodeJs/TypeScript. 
 
-Detailed API documentation available at: [hydra-mq.marcoapp.io](https://hydra-mq.marcoapp.io/).
+Detailed API documentation available at: [HydraMQ API Docs](https://hydra-mq.marcoapp.io/).
 
 Join our discord if you have any questions/issues: [Marco Discord](https://discord.gg/JnX8KJpQJx)
 
