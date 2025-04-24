@@ -8,31 +8,55 @@ export type { DaemonProcessor } from "@src/queue/daemon/processor"
 export type { DaemonCoordinator } from "@src/queue/daemon/coordinator"
 
 export type {
-    MessageEnqueueResult,
-    MessageEnqueueResultMessageEnqueued,
-    MessageEnqueueResultMessageDependencyNotFound
-} from "@src/binding/message-enqueue"
+    MessageCreateResult,
+} from "@src/binding/message-create"
 
 export type {
-    JobMessageEnqueueScheduleSetResult
-} from "@src/binding/job-message-enqueue-schedule-set"
+    JobJobMessageCreateScheduleSetResult
+} from "@src/binding/job-job-message-create-schedule-set"
+
+export type {
+    MessageDequeueResultDependency,
+    MessageDequeueResultDependencyCompleted,
+    MessageDequeueResultDependencyDeduplicated,
+    MessageDequeueResultDependencyDropped,
+    MessageDequeueResultDependencyExhausted,
+    MessageDequeueResultDependencyMissing,
+} from "@src/binding/message-dequeue"
 
 export type {
     HydraEvent,
     HydraEventHandler,
+    HydraEventChannelPolicyCleared,
+    HydraEventChannelPolicySet,
+    HydraEventJobMessageCreateScheduleCleared,
+    HydraEventJobMessageCreateScheduleSet,
+    HydraEventMessageCreated,
+    HydraEventMessageDeletedMessageDeleted,
+    HydraEventMessageDeletedMessageNotFound,
+    HydraEventMessageDeletedMessageStatusInvalid,
+    HydraEventMessageDependencyUpdatedMessageDependencyUpdated,
+    HydraEventMessageDependencyUpdatedMessageNotFound,
+    HydraEventMessageDependencyUpdatedMessageStatusInvalid,
     HydraEventMessageDequeued,
-    HydraEventMessageAccepted,
-    HydraEventMessageDeduplicated,
-    HydraEventMessageDeleted,
-    HydraEventMessageDependencyResolved,
-    HydraEventMessageDropped,
-    HydraEventMessageEnqueued,
-    HydraEventMessageExhausted,
-    HydraEventMessageLocked,
-    HydraEventMessageCompleted,
+    HydraEventMessageFailedMessageExhausted,
+    HydraEventMessageFailedMessageLocked,
+    HydraEventMessageFailedMessageNotFound,
+    HydraEventMessageFailedMessageStatusInvalid,
+    HydraEventMessageReleasedMessageAccepted,
+    HydraEventMessageReleasedMessageDeduplicated,
+    HydraEventMessageReleasedMessageDependenciesOutstanding,
+    HydraEventMessageReleasedMessageDropped,
+    HydraEventMessageReleasedMessageNotFound,
+    HydraEventMessageReleasedMessageStatusInvalid,
+    HydraEventMessageSucceededMessageNotFound,
+    HydraEventMessageSucceededMessageStatusInvalid,
+    HydraEventMessageSucceededMessageSucceeded,
     HydraEventMessageSweptMany,
-    HydraEventMessageUnsatisfied
+    HydraEventMessageUnlockedMessageAccepted,
+    HydraEventMessageUnlockedMessageNotFound,
+    HydraEventMessageUnlockedMessageStatusInvalid,
 } from "@src/queue/daemon/event"
 
-export type { ProcessorFn, ProcessorFnMetadata } from "@src/queue/daemon/processor/process-fn"
+export type { ProcessorFn } from "@src/queue/daemon/processor/process-fn"
 export type { DatabaseClient } from "@src/core/database-client"

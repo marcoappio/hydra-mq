@@ -1,9 +1,13 @@
 import { Queue } from "@src/queue"
 import { beforeEach, describe, expect, it } from "bun:test"
+import { randomUUID } from "crypto"
 import { Pool } from "pg"
-import { messageEnqueue, type MessageEnqueueResultMessageEnqueued } from "@src/binding/message-enqueue"
+import { messageCreate } from "@src/binding/message-create"
 import { messageDequeue, type MessageDequeueResultMessageDequeued } from "@src/binding/message-dequeue"
 import { messageRelease } from "@src/binding/message-release"
+import { messageSuccess } from "@src/binding/message-success"
+import { messageFail } from "@src/binding/message-fail"
+import { messageDependencyUpdate } from "@src/binding/message-dependency-update"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
@@ -23,12 +27,12 @@ const messageParams = {
     channelPriority: null,
     name: null,
     numAttempts: 1,
-    maxProcessingMs: 60,
-    lockMs: 5,
+    maxProcessingMs: 60_000,
+    lockMs: 0,
     lockMsFactor: 2,
     delayMs: 0,
-    dependsOn: [],
-    dependencyFailureCascade: true,
+    deleteMs: 0,
+    dependsOn: []
 }
 
 describe("messageDequeue", async () => {
@@ -41,98 +45,193 @@ describe("messageDequeue", async () => {
         expect(result.resultType).toBe("QUEUE_EMPTY")
     })
 
+    it("correctly returns dependencies", async () => {
+        const completeCreateResult = await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ...messageParams,
+        })
+
+        const exhaustedCreateResult = await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ...messageParams,
+        })
+
+        const missingId = randomUUID()
+        const childCreateResult = await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ...messageParams,
+            dependsOn: [completeCreateResult.id, exhaustedCreateResult.id, missingId]
+        })
+
+        await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: completeCreateResult.id,
+        })
+
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
+
+        await messageSuccess({
+            databaseClient: pool,
+            schema: "test",
+            id: completeCreateResult.id,
+            result: "lol",
+        })
+
+        await messageDependencyUpdate({
+            databaseClient: pool,
+            schema: "test",
+            id: childCreateResult.id,
+        })
+
+        await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: exhaustedCreateResult.id,
+        })
+
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
+
+        await messageFail({
+            databaseClient: pool,
+            schema: "test",
+            id: exhaustedCreateResult.id,
+            exhaust: true,
+        })
+
+        await messageDependencyUpdate({
+            databaseClient: pool,
+            schema: "test",
+            id: childCreateResult.id,
+        })
+
+        await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: childCreateResult.id,
+        })
+
+        const dequeueResult = await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        }) as MessageDequeueResultMessageDequeued
+        expect(dequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
+        expect(dequeueResult).toMatchObject({
+            resultType: "MESSAGE_DEQUEUED",
+            dependencies: expect.arrayContaining([
+                expect.objectContaining({
+                    id: completeCreateResult.id,
+                    isSuccess: true,
+                    dependencyType: "COMPLETED",
+                    data: "lol"
+                }),
+                expect.objectContaining({
+                    id: exhaustedCreateResult.id,
+                    isSuccess: false,
+                    dependencyType: "EXHAUSTED"
+                }),
+                expect.objectContaining({
+                    id: missingId,
+                    isSuccess: false,
+                    dependencyType: "MISSING"
+                })
+            ])
+        })
+    })
+
     it("correctly dequeues messages in the correct order", async () => {
-        const firstEnqueueResult = await messageEnqueue({
+        const firstCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ...messageParams,
             priority: 2,
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(firstEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
 
-        const secondEnqueueResult = await messageEnqueue({
+        const secondCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ...messageParams,
             priority: 1,
             channelPriority: 2
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(secondEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
 
-        const thirdEnqueueResult = await messageEnqueue({
+        const thirdCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ...messageParams,
             priority: 1,
             channelPriority: 1
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(thirdEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
 
-        const fourthEnqueueResult = await messageEnqueue({
+        const fourthCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ...messageParams,
             channelName: "other",
             priority: 1,
             channelPriority: 10
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(thirdEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
 
-        const firstReleaseResult = await messageRelease({
+        await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: firstEnqueueResult.messageId,
+            id: firstCreateResult.id,
         })
-        expect(firstReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
 
-        const secondReleaseResult = await messageRelease({
+        await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: secondEnqueueResult.messageId,
+            id: secondCreateResult.id,
         })
-        expect(secondReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
 
-        const thirdReleaseResult = await messageRelease({
+        await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: thirdEnqueueResult.messageId,
+            id: thirdCreateResult.id,
         })
-        expect(thirdReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
 
-        const fourthReleaseResult = await messageRelease({
+        await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: fourthEnqueueResult.messageId,
+            id: fourthCreateResult.id,
         })
-        expect(fourthReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
 
         const firstDequeueResult = await messageDequeue({
             databaseClient: pool,
             schema: "test",
         }) as MessageDequeueResultMessageDequeued
         expect(firstDequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
-        expect(firstDequeueResult.message.id).toBe(firstEnqueueResult.messageId)
+        expect(firstDequeueResult.id).toBe(firstCreateResult.id)
 
         const secondDequeueResult = await messageDequeue({
             databaseClient: pool,
             schema: "test",
         }) as MessageDequeueResultMessageDequeued
         expect(secondDequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
-        expect(secondDequeueResult.message.id).toBe(fourthEnqueueResult.messageId)
+        expect(secondDequeueResult.id).toBe(fourthCreateResult.id)
 
         const thirdDequeueResult = await messageDequeue({
             databaseClient: pool,
             schema: "test",
         }) as MessageDequeueResultMessageDequeued
         expect(thirdDequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
-        expect(thirdDequeueResult.message.id).toBe(thirdEnqueueResult.messageId)
+        expect(thirdDequeueResult.id).toBe(thirdCreateResult.id)
 
         const fourthDequeueResult = await messageDequeue({
             databaseClient: pool,
             schema: "test",
         }) as MessageDequeueResultMessageDequeued
         expect(fourthDequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
-        expect(fourthDequeueResult.message.id).toBe(secondEnqueueResult.messageId)
+        expect(fourthDequeueResult.id).toBe(secondCreateResult.id)
     })
 
 })

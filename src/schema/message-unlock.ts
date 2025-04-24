@@ -1,8 +1,9 @@
 import { sql, valueNode, type SqlRefNode } from "@src/core/sql"
-import { MessageStatus } from "@src/schema/message"
+import { MessageStatus } from "@src/schema/enum/message-status"
 
 export enum MessageUnlockResultCode {
     MESSAGE_NOT_FOUND,
+    MESSAGE_STATUS_INVALID,
     MESSAGE_ACCEPTED
 }
 
@@ -22,12 +23,13 @@ export const messageUnlockInstall = (params: {
             BEGIN
                 v_now := NOW();
 
-                UPDATE ${params.schema}.message SET
-                    status = ${valueNode(MessageStatus.ACCEPTED)},
-                    accepted_at = v_now
+                SELECT
+                    status,
+                    channel_name,
+                    priority
+                FROM ${params.schema}.message
                 WHERE id = p_id
-                AND status = ${valueNode(MessageStatus.LOCKED)}
-                RETURNING channel_name, priority
+                FOR UPDATE
                 INTO v_message;
 
                 IF v_message IS NULL THEN
@@ -35,6 +37,17 @@ export const messageUnlockInstall = (params: {
                         'result_code', ${valueNode(MessageUnlockResultCode.MESSAGE_NOT_FOUND)}
                     );
                 END IF;
+
+                IF v_message.status != ${valueNode(MessageStatus.LOCKED)} THEN
+                    RETURN JSONB_BUILD_OBJECT(
+                        'result_code', ${valueNode(MessageUnlockResultCode.MESSAGE_STATUS_INVALID)}
+                    );
+                END IF;
+
+                UPDATE ${params.schema}.message SET
+                    status = ${valueNode(MessageStatus.ACCEPTED)},
+                    accepted_at = v_now
+                WHERE id = p_id;
 
                 UPDATE ${params.schema}.channel_state SET
                     next_message_id = p_id,

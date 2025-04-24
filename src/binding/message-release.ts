@@ -4,29 +4,33 @@ import { MessageReleaseResultCode } from "@src/schema/message-release"
 
 export type MessageReleaseQueryResult =
     | { result_code: MessageReleaseResultCode.MESSAGE_NOT_FOUND }
+    | { result_code: MessageReleaseResultCode.MESSAGE_STATUS_INVALID }
+    | { result_code: MessageReleaseResultCode.MESSAGE_DEPENDENCIES_OUTSTANDING }
     | { result_code: MessageReleaseResultCode.MESSAGE_ACCEPTED }
     | { result_code: MessageReleaseResultCode.MESSAGE_DEDUPLICATED }
     | { result_code: MessageReleaseResultCode.MESSAGE_DROPPED }
-    | { result_code: MessageReleaseResultCode.MESSAGE_UNSATISFIED }
 
 export type MessageReleaseResult =
     | { resultType: "MESSAGE_NOT_FOUND" }
+    | { resultType: "MESSAGE_STATUS_INVALID" }
+    | { resultType: "MESSAGE_DEPENDENCIES_OUTSTANDING" }
     | { resultType: "MESSAGE_ACCEPTED" }
     | { resultType: "MESSAGE_DEDUPLICATED" }
     | { resultType: "MESSAGE_DROPPED" }
-    | { resultType: "MESSAGE_UNSATISFIED" }
 
 export const messageReleaseQueryResultParse = (result: MessageReleaseQueryResult): MessageReleaseResult => {
     if (result.result_code === MessageReleaseResultCode.MESSAGE_NOT_FOUND) {
         return { resultType: "MESSAGE_NOT_FOUND" }
+    } else if (result.result_code === MessageReleaseResultCode.MESSAGE_STATUS_INVALID) {
+        return { resultType: "MESSAGE_STATUS_INVALID" }
     } else if (result.result_code === MessageReleaseResultCode.MESSAGE_ACCEPTED) {
         return { resultType: "MESSAGE_ACCEPTED" }
     } else if (result.result_code === MessageReleaseResultCode.MESSAGE_DEDUPLICATED) {
         return { resultType: "MESSAGE_DEDUPLICATED" }
     } else if (result.result_code === MessageReleaseResultCode.MESSAGE_DROPPED) {
         return { resultType: "MESSAGE_DROPPED" }
-    } else if (result.result_code === MessageReleaseResultCode.MESSAGE_UNSATISFIED) {
-        return { resultType: "MESSAGE_UNSATISFIED" }
+    } else if (result.result_code === MessageReleaseResultCode.MESSAGE_DEPENDENCIES_OUTSTANDING) {
+        return { resultType: "MESSAGE_DEPENDENCIES_OUTSTANDING" }
     } else {
         result satisfies never
         throw new Error("Unexpected result")

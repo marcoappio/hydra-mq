@@ -2,12 +2,12 @@ import { Queue } from "@src/queue"
 import { beforeEach, describe, expect, it } from "bun:test"
 import { Pool } from "pg"
 import { messageRelease } from "@src/binding/message-release"
-import { messageEnqueue, type MessageEnqueueResultMessageEnqueued } from "@src/binding/message-enqueue"
+import { messageCreate } from "@src/binding/message-create"
 import { sql, valueNode } from "@src/core/sql"
 import { messageUnlock } from "@src/binding/message-unlock"
 import { messageFail } from "@src/binding/message-fail"
-import { MessageStatus } from "@src/schema/message"
 import { messageDequeue } from "@src/binding/message-dequeue"
+import { randomUUID } from "crypto"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
@@ -27,90 +27,127 @@ const messageParams = {
     channelPriority: null,
     name: null,
     numAttempts: 10,
-    maxProcessingMs: 60,
-    lockMs: 5,
+    maxProcessingMs: 60_000,
+    lockMs: 0,
     lockMsFactor: 2,
-    delayMs: 30,
-    dependsOn: [],
-    dependencyFailureCascade: true,
+    delayMs: 0,
+    deleteMs: 0,
+    dependsOn: []
 }
 
 describe("messageUnlock", async () => {
-
-    it("correctly reports on missing message", async () => {
-        const enqueueResult = await messageEnqueue({
+    it("reports message not found", async () => {
+        const unlockResult = await messageUnlock({
             databaseClient: pool,
             schema: "test",
-            ... messageParams,
-        }) as MessageEnqueueResultMessageEnqueued
-
-        const result = await messageUnlock({
-            databaseClient: pool,
-            schema: "test",
-            id: enqueueResult.messageId
+            id: randomUUID()
         })
-        expect(result.resultType).toBe("MESSAGE_NOT_FOUND")
-
-        await messageRelease({
-            databaseClient: pool,
-            schema: "test",
-            id: enqueueResult.messageId,
-        })
-
-        const releaseResult = await messageFail({
-            databaseClient: pool,
-            schema: "test",
-            id: enqueueResult.messageId,
-            exhaust: false
-        })
-
-        expect(releaseResult.resultType).toBe("MESSAGE_NOT_FOUND")
+        expect(unlockResult.resultType).toBe("MESSAGE_NOT_FOUND")
     })
 
-    it("correctly unlocks messages", async () => {
-        const enqueueResult = await messageEnqueue({
+    it("reports message in an invalid state", async () => {
+        const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
-        }) as MessageEnqueueResultMessageEnqueued
-
-        const releaseResult = await messageRelease({
-            databaseClient: pool,
-            schema: "test",
-            id: enqueueResult.messageId,
         })
-        expect(releaseResult.resultType).toBe("MESSAGE_ACCEPTED")
-
-        const dequeueResult = await messageDequeue({
-            databaseClient: pool,
-            schema: "test",
-        })
-        expect(dequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
-
-        const failResult = await messageFail({
-            databaseClient: pool,
-            schema: "test",
-            id: enqueueResult.messageId,
-            exhaust: false
-        })
-        expect(failResult.resultType).toBe("MESSAGE_LOCKED")
 
         const unlockResult = await messageUnlock({
             databaseClient: pool,
             schema: "test",
-            id: enqueueResult.messageId
+            id: createResult.id
+        })
+        expect(unlockResult.resultType).toBe("MESSAGE_STATUS_INVALID")
+    })
+
+    it("correctly unlocks messages and sets next channel message if available", async () => {
+        const createResult = await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ... messageParams,
+        })
+
+        await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: createResult.id,
+        })
+
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
+
+        await messageFail({
+            databaseClient: pool,
+            schema: "test",
+            id: createResult.id,
+            exhaust: false
+        })
+
+        const unlockResult = await messageUnlock({
+            databaseClient: pool,
+            schema: "test",
+            id: createResult.id
         })
         expect(unlockResult.resultType).toBe("MESSAGE_ACCEPTED")
 
-        const message = await pool.query(sql `
-            SELECT * FROM test.message    
-            WHERE id = ${valueNode(enqueueResult.messageId)}
-        `).then(res => res.rows[0])
+        const channelState = await pool.query(sql `
+            SELECT * FROM test.channel_state
+            WHERE name = ${valueNode(messageParams.channelName)}
+        `).then(result => result.rows[0])
+        expect(channelState.next_message_id).toEqual(createResult.id)
+    })
 
-        expect(message).toMatchObject({
-            status: MessageStatus.ACCEPTED
+    it("correctly unlocks messages but doesn't set next channel message if not available", async () => {
+        const createResult = await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ... messageParams,
         })
 
+        const secondCreateResult = await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ... messageParams,
+        })
+
+        await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: createResult.id,
+        })
+
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
+
+        await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: secondCreateResult.id,
+        })
+
+        await messageFail({
+            databaseClient: pool,
+            schema: "test",
+            id: createResult.id,
+            exhaust: false
+        })
+
+        const unlockResult = await messageUnlock({
+            databaseClient: pool,
+            schema: "test",
+            id: createResult.id
+        })
+        expect(unlockResult.resultType).toBe("MESSAGE_ACCEPTED")
+
+        const channelState = await pool.query(sql `
+            SELECT * FROM test.channel_state
+            WHERE name = ${valueNode(messageParams.channelName)}
+        `).then(result => result.rows[0])
+        expect(channelState.next_message_id).toEqual(secondCreateResult.id)
     })
 })
 

@@ -1,7 +1,7 @@
 import { parseCronExpr } from "@src/core/cron"
 import { arrayNode, sql, valueNode, type SqlRefNode } from "@src/core/sql"
-import { JobType } from "@src/schema/job"
-import { MessageStatus } from "@src/schema/message"
+import { JobType } from "@src/schema/enum/job-type"
+import { MessageStatus } from "@src/schema/enum/message-status"
 
 export const messageSweepManyInstall = (params: {
     schema: SqlRefNode
@@ -30,7 +30,7 @@ export const messageSweepManyInstall = (params: {
                     ORDER BY sweep_after ASC
                 LOOP
                     v_message_ids := ARRAY_APPEND(v_message_ids, v_id);
-                    PERFORM ${params.schema}.job_message_lock_enqueue(v_id);
+                    PERFORM ${params.schema}.job_message_lock(v_id);
                 END LOOP;
 
                 RETURN JSONB_BUILD_OBJECT(

@@ -1,13 +1,14 @@
 import { escapeRefNode, sql, valueNode, type SqlRefNode } from "@src/core/sql"
 import { createHash } from "crypto"
-import { MessageStatus } from "@src/schema/message"
+import { MessageStatus } from "@src/schema/enum/message-status"
 
 export enum MessageReleaseResultCode {
     MESSAGE_NOT_FOUND,
+    MESSAGE_DEPENDENCIES_OUTSTANDING,
+    MESSAGE_STATUS_INVALID,
     MESSAGE_DROPPED,
     MESSAGE_DEDUPLICATED,
-    MESSAGE_ACCEPTED,
-    MESSAGE_UNSATISFIED
+    MESSAGE_ACCEPTED
 }
 
 export const messageReleaseInstall = (params: {
@@ -27,7 +28,10 @@ export const messageReleaseInstall = (params: {
                 v_now TIMESTAMP;
                 v_message RECORD;
                 v_lock_id INTEGER;
+                v_next_status INTEGER;
+                v_result_code INTEGER;
                 v_existing_message RECORD;
+                v_message_parent RECORD;
                 v_channel_policy RECORD;
                 v_channel_state RECORD;
             BEGIN
@@ -35,19 +39,28 @@ export const messageReleaseInstall = (params: {
 
                 SELECT
                     name,
+                    status,
                     channel_name,
-                    priority,
-                    num_dependencies_failed,
-                    dependency_failure_cascade
+                    delete_ms,
+                    num_dependencies,
+                    priority
                 FROM ${params.schema}.message
                 WHERE id = p_id
-                AND status = ${valueNode(MessageStatus.CREATED)}
                 FOR UPDATE
                 INTO v_message;
 
                 IF v_message IS NULL THEN
                     RETURN JSONB_BUILD_OBJECT(
                         'result_code', ${valueNode(MessageReleaseResultCode.MESSAGE_NOT_FOUND)}
+                    );
+                ELSIF v_message.status != ${valueNode(MessageStatus.CREATED)} THEN
+                    RETURN JSONB_BUILD_OBJECT(
+                        'result_code', ${valueNode(MessageReleaseResultCode.MESSAGE_STATUS_INVALID)}
+                    );
+                ELSIF v_message.num_dependencies > 0 THEN
+                    RETURN JSONB_BUILD_OBJECT(
+                        'result_code', ${valueNode(MessageReleaseResultCode.MESSAGE_DEPENDENCIES_OUTSTANDING)},
+                        'message', 'Message has dependencies'
                     );
                 END IF;
 
@@ -80,30 +93,6 @@ export const messageReleaseInstall = (params: {
                 RETURNING current_size, next_message_id
                 INTO v_channel_state;
 
-                IF v_message.num_dependencies_failed > 0 AND v_message.dependency_failure_cascade THEN
-                    UPDATE ${params.schema}.message SET
-                        status = ${valueNode(MessageStatus.UNSATISFIED)}
-                    WHERE id = p_id;
-
-                    PERFORM ${params.schema}.job_message_finalize_enqueue(p_id);
-
-                    RETURN JSONB_BUILD_OBJECT(
-                        'result_code', ${valueNode(MessageReleaseResultCode.MESSAGE_UNSATISFIED)}
-                    );
-                END IF;
-
-                IF v_channel_state.current_size >= v_channel_policy.max_size THEN
-                    UPDATE ${params.schema}.message SET
-                        status = ${valueNode(MessageStatus.DROPPED)}
-                    WHERE id = p_id;
-
-                    PERFORM ${params.schema}.job_message_finalize_enqueue(p_id);
-
-                    RETURN JSONB_BUILD_OBJECT(
-                        'result_code', ${valueNode(MessageReleaseResultCode.MESSAGE_DROPPED)}
-                    );
-                END IF;
-
                 v_lock_id := HASHTEXT(${valueNode(hashPrefix)} || v_message.name);
                 PERFORM PG_ADVISORY_XACT_LOCK(v_lock_id);
 
@@ -115,38 +104,55 @@ export const messageReleaseInstall = (params: {
                 LIMIT 1
                 INTO v_existing_message;
 
-                IF v_existing_message IS NOT NULL THEN
+                IF v_channel_state.current_size >= v_channel_policy.max_size THEN
+                    v_next_status := ${valueNode(MessageStatus.DROPPED)};
+                    v_result_code := ${valueNode(MessageReleaseResultCode.MESSAGE_DROPPED)};
+                ELSIF v_existing_message IS NOT NULL THEN
+                    v_next_status := ${valueNode(MessageStatus.DEDUPLICATED)};
+                    v_result_code := ${valueNode(MessageReleaseResultCode.MESSAGE_DEDUPLICATED)};
+                ELSE
+                    v_next_status := ${valueNode(MessageStatus.ACCEPTED)};
+                    v_result_code := ${valueNode(MessageReleaseResultCode.MESSAGE_ACCEPTED)};
+                END IF;
+
+                IF v_next_status != ${valueNode(MessageStatus.ACCEPTED)} THEN
                     UPDATE ${params.schema}.message SET
-                        status = ${valueNode(MessageStatus.DEDUPLICATED)}
+                        status = v_next_status
                     WHERE id = p_id;
 
-                    PERFORM ${params.schema}.job_message_finalize_enqueue(p_id);
+                    FOR v_message_parent IN
+                        UPDATE ${params.schema}.message_parent SET
+                            status = v_next_status
+                        WHERE parent_message_id = p_id
+                        RETURNING message_id
+                    LOOP
+                        PERFORM ${params.schema}.job_message_dependency_update(v_message_parent.message_id);
+                    END LOOP;
 
-                    RETURN JSONB_BUILD_OBJECT(
-                        'result_code', ${valueNode(MessageReleaseResultCode.MESSAGE_DEDUPLICATED)}
+                    PERFORM ${params.schema}.job_message_delete(
+                        p_id,
+                        v_now + v_message.delete_ms * INTERVAL '1 MILLISECOND'
                     );
-                END IF;
-
-                IF v_channel_state.next_message_id IS NULL THEN
-                    UPDATE ${params.schema}.channel_state SET
-                        current_size = current_size + 1,
-                        next_message_id = p_id,
-                        next_priority = v_message.priority
-                    WHERE name = v_message.channel_name;
                 ELSE
-                    UPDATE ${params.schema}.channel_state SET
-                        current_size = current_size + 1
-                    WHERE name = v_message.channel_name;
+                    IF v_channel_state.next_message_id IS NULL THEN
+                        UPDATE ${params.schema}.channel_state SET
+                            current_size = current_size + 1,
+                            next_message_id = p_id,
+                            next_priority = v_message.priority
+                        WHERE name = v_message.channel_name;
+                    ELSE
+                        UPDATE ${params.schema}.channel_state SET
+                            current_size = current_size + 1
+                        WHERE name = v_message.channel_name;
+                    END IF;
+
+                    UPDATE ${params.schema}.message SET
+                        status = ${valueNode(MessageStatus.ACCEPTED)},
+                        accepted_at = v_now
+                    WHERE id = p_id;
                 END IF;
 
-                UPDATE ${params.schema}.message SET
-                    status = ${valueNode(MessageStatus.ACCEPTED)},
-                    accepted_at = v_now
-                WHERE id = p_id;
-
-                RETURN JSONB_BUILD_OBJECT(
-                    'result_code', ${valueNode(MessageReleaseResultCode.MESSAGE_ACCEPTED)}
-                );
+                RETURN JSONB_BUILD_OBJECT('result_code', v_result_code);
             END;
             $$ LANGUAGE plpgsql;
         `

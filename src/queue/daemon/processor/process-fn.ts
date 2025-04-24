@@ -1,11 +1,9 @@
-export type ProcessorFnMetadata = {
-    setFail: (params? : {
-        exhaust? : boolean
-    }) => void
+import type { MessageDequeueResultDependency } from "@src/binding/message-dequeue"
 
-    message: {
-        id: string
-        channelName: string
-    }
-}
-export type ProcessorFn = (payload: string, metadata: ProcessorFnMetadata) => Promise<void>
+export type ProcessorFn = (payload : string, params : {
+    messageId: string
+    channelName: string
+    dependencies: MessageDequeueResultDependency[]
+    setFail: (params? : { exhaust?: boolean }) => void
+    setResults: (result: string) => void
+}) => Promise<void>
