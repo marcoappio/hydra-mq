@@ -53,9 +53,7 @@ export const jobProcessInstall = (params : {
                 v_job RECORD;
                 v_job_name TEXT;
                 v_channel_name TEXT;
-                v_control_id UUID;
                 v_message_id UUID;
-                v_target_id UUID;
             BEGIN
                 v_now := NOW();
 
@@ -230,7 +228,6 @@ export const jobProcessInstall = (params : {
                             (v_job.params->>'lock_ms_factor')::REAL,
                             (v_job.params->>'delay_ms')::INTEGER,
                             (v_job.params->>'delete_ms')::INTEGER,
-                            ${valueNode(false)},
                             ARRAY[]::UUID[]
                         )
                     );
