@@ -1,3 +1,16 @@
+# v0.8.2 (Fri Apr 25 2025)
+
+#### 🐛 Bug Fix
+
+- Tweak docs [#43](https://github.com/marcoappio/hydra-mq/pull/43) ([@tlonny](https://github.com/tlonny))
+- Fix bug with scheduling messages [#42](https://github.com/marcoappio/hydra-mq/pull/42) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.8.1 (Fri Apr 25 2025)
 
 #### 🐛 Bug Fix
