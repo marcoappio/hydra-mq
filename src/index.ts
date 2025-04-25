@@ -58,5 +58,5 @@ export type {
     HydraEventMessageUnlockedMessageStatusInvalid,
 } from "@src/queue/daemon/event"
 
-export type { ProcessorFn } from "@src/queue/daemon/processor/process-fn"
+export type { ProcessorFn, ProcessorFnParams } from "@src/queue/daemon/processor/process-fn"
 export type { DatabaseClient } from "@src/core/database-client"
