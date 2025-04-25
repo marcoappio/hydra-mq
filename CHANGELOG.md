@@ -1,3 +1,15 @@
+# v0.8.3 (Fri Apr 25 2025)
+
+#### 🐛 Bug Fix
+
+- Fix channel policy clear [#44](https://github.com/marcoappio/hydra-mq/pull/44) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.8.2 (Fri Apr 25 2025)
 
 #### 🐛 Bug Fix
