@@ -1,3 +1,15 @@
+# v0.8.1 (Fri Apr 25 2025)
+
+#### 🐛 Bug Fix
+
+- Expose ProcessorFn params type [#41](https://github.com/marcoappio/hydra-mq/pull/41) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.8.0 (Fri Apr 25 2025)
 
 #### 🚀 Enhancement
