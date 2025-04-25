@@ -2,11 +2,11 @@ import { Queue } from "@src/queue"
 import { beforeEach, describe, expect, it } from "bun:test"
 import { Pool } from "pg"
 import { messageRelease } from "@src/binding/message-release"
-import { messageEnqueue, type MessageEnqueueResultMessageEnqueued } from "@src/binding/message-enqueue"
+import { messageCreate } from "@src/binding/message-create"
 import { messageSweepMany } from "@src/binding/message-sweep-many"
 import { messageDequeue, type MessageDequeueResultMessageDequeued } from "@src/binding/message-dequeue"
 import { sql, valueNode } from "@src/core/sql"
-import { JobType } from "@src/schema/job"
+import { JobType } from "@src/schema/enum/job-type"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
@@ -26,12 +26,12 @@ const messageParams = {
     channelPriority: null,
     name: null,
     numAttempts: 1,
-    maxProcessingMs: 60,
-    lockMs: 5,
+    maxProcessingMs: 60_000,
+    lockMs: 0,
     lockMsFactor: 2,
-    delayMs: 30,
-    dependsOn: [],
-    dependencyFailureCascade: true,
+    delayMs: 0,
+    deleteMs: 0,
+    dependsOn: []
 }
 
 describe("messageSweepMany", async () => {
@@ -52,31 +52,28 @@ describe("messageSweepMany", async () => {
 
     it("correctly returns an empty array if jobs are not yet stalled", async () => {
 
-        const firstEnqueueResult = await messageEnqueue({
+        const firstCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(firstEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
 
-        const firstReleaseResult = await messageRelease({
+        await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: firstEnqueueResult.messageId,
+            id: firstCreateResult.id,
         })
-        expect(firstReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
 
-        const firstDequeueResult = await messageDequeue({
+        await messageDequeue({
             databaseClient: pool,
             schema: "test",
         }) as MessageDequeueResultMessageDequeued
-        expect(firstDequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
 
-        const result = await messageSweepMany({
+        const sweepManyResult = await messageSweepMany({
             databaseClient: pool,
             schema: "test"
         })
-        expect(result.ids).toBeArrayOfSize(0)
+        expect(sweepManyResult.ids).toBeArrayOfSize(0)
 
         const numRows = await pool.query(sql `
             SELECT COUNT(*) AS num_rows FROM test.job
@@ -87,41 +84,35 @@ describe("messageSweepMany", async () => {
     })
 
     it("correctly handles stalled jobs", async () => {
-
-        const firstEnqueueResult = await messageEnqueue({
+        const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
             maxProcessingMs: 0,
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(firstEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
-
-        const firstReleaseResult = await messageRelease({
-            databaseClient: pool,
-            schema: "test",
-            id: firstEnqueueResult.messageId,
         })
-        expect(firstReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
 
-        const firstDequeueResult = await messageDequeue({
+        await messageRelease({
             databaseClient: pool,
             schema: "test",
-        }) as MessageDequeueResultMessageDequeued
-        expect(firstDequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
+            id: createResult.id,
+        })
 
-        const result = await messageSweepMany({
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
+
+        const sweepManyResult = await messageSweepMany({
             databaseClient: pool,
             schema: "test"
         })
-        expect(result.ids).toEqual([firstEnqueueResult.messageId])
+        expect(sweepManyResult.ids).toEqual([createResult.id])
 
         const numRows = await pool.query(sql `
             SELECT COUNT(*) AS num_rows FROM test.job
             WHERE type = ${valueNode(JobType.MESSAGE_FAIL)}
         `).then(res => Number(res.rows[0].num_rows))
         expect(numRows).toBe(1)
-
-
     })
 })
 

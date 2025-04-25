@@ -4,17 +4,21 @@ import { MessageFailResultCode } from "@src/schema/message-fail"
 
 export type MessageFailQueryResult =
     | { result_code: MessageFailResultCode.MESSAGE_NOT_FOUND }
+    | { result_code: MessageFailResultCode.MESSAGE_STATUS_INVALID }
     | { result_code: MessageFailResultCode.MESSAGE_LOCKED }
     | { result_code: MessageFailResultCode.MESSAGE_EXHAUSTED }
 
 export type MessageFailResult =
     | { resultType: "MESSAGE_NOT_FOUND" }
+    | { resultType: "MESSAGE_STATUS_INVALID" }
     | { resultType: "MESSAGE_LOCKED" }
     | { resultType: "MESSAGE_EXHAUSTED" }
 
 export const messageFailQueryResultParse = (result: MessageFailQueryResult): MessageFailResult => {
     if (result.result_code === MessageFailResultCode.MESSAGE_NOT_FOUND) {
         return { resultType: "MESSAGE_NOT_FOUND" }
+    } else if (result.result_code === MessageFailResultCode.MESSAGE_STATUS_INVALID) {
+        return { resultType: "MESSAGE_STATUS_INVALID" }
     } else if (result.result_code === MessageFailResultCode.MESSAGE_LOCKED) {
         return { resultType: "MESSAGE_LOCKED" }
     } else if (result.result_code === MessageFailResultCode.MESSAGE_EXHAUSTED) {

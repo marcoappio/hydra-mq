@@ -1,5 +1,6 @@
 import type { DatabaseClient } from "@src/core/database-client"
-import { channelPolicyClear } from "@src/binding/channel-policy-clear"
+import { jobJobMessageCreateScheduleClear } from "@src/binding/job-job-message-create-schedule-clear"
+import { jobChannelPolicySet } from "@src/binding/job-channel-policy-set"
 import { channelPolicySet } from "@src/binding/channel-policy-set"
 
 export class ChannelPolicyModule {
@@ -19,8 +20,21 @@ export class ChannelPolicyModule {
         databaseClient: DatabaseClient
         maxConcurrency: number | null
         maxSize: number | null
+        unsafe? : {
+            forceImmediate?: boolean
+        }
     }) {
-        return channelPolicySet({
+        if (params.unsafe?.forceImmediate) {
+            return channelPolicySet({
+                databaseClient: params.databaseClient,
+                maxConcurrency: params.maxConcurrency,
+                maxSize: params.maxSize,
+                name: this.channel,
+                schema: this.schema,
+            })
+        }
+
+        return jobChannelPolicySet({
             databaseClient: params.databaseClient,
             maxConcurrency: params.maxConcurrency,
             maxSize: params.maxSize,
@@ -32,7 +46,7 @@ export class ChannelPolicyModule {
     async clear(params: {
         databaseClient: DatabaseClient
     }) {
-        return channelPolicyClear({
+        return jobJobMessageCreateScheduleClear({
             databaseClient: params.databaseClient,
             name: this.channel,
             schema: this.schema,

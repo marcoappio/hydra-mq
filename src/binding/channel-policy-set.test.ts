@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "bun:test"
 import { Pool } from "pg"
 import { channelPolicySet } from "@src/binding/channel-policy-set"
 import { sql } from "@src/core/sql"
-import { messageEnqueue, type MessageEnqueueResultMessageEnqueued } from "@src/binding/message-enqueue"
+import { messageCreate } from "@src/binding/message-create"
 import { messageRelease } from "@src/binding/message-release"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
@@ -24,12 +24,12 @@ const messageParams = {
     channelPriority: null,
     name: null,
     numAttempts: 1,
-    maxProcessingMs: 60,
-    lockMs: 5,
+    maxProcessingMs: 60_000,
+    lockMs: 0,
     lockMsFactor: 2,
     dependsOn: [],
-    delayMs: 30,
-    dependencyFailureCascade: true,
+    deleteMs: 0,
+    delayMs: 0
 }
 
 describe("channelPolicySet", async () => {
@@ -80,16 +80,16 @@ describe("channelPolicySet", async () => {
     })
 
     it("correctly overwrites state parameters", async () => {
-        const enqueueResult = await messageEnqueue({
+        const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
-        }) as MessageEnqueueResultMessageEnqueued
+        })
 
         await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: enqueueResult.messageId,
+            id: createResult.id,
         })
 
         const initialState = await pool.query(sql `

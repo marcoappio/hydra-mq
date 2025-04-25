@@ -1,5 +1,5 @@
 import { escapeRefNode, rawNode, refNode, sql, valueNode, type SqlRefNode, type SqlValueNode } from "@src/core/sql"
-import { MessageStatus } from "@src/schema/message"
+import { MessageStatus } from "@src/schema/enum/message-status"
 
 export enum MessageDequeueResultCode {
     QUEUE_EMPTY,
@@ -25,8 +25,6 @@ const messageFetch = (params: {
         LIMIT ${params.limit}
     `
 }
-
-
 
 const channelStateFetch = (params: {
     select : SqlRefNode[],
@@ -77,6 +75,8 @@ export const messageDequeueInstall = (params: {
                 v_now TIMESTAMP;
                 v_channel_state RECORD;
                 v_message RECORD;
+                v_dependency_data RECORD;
+                v_dependencies JSONB;
                 v_next_message RECORD;
             BEGIN
                 v_now := NOW();
@@ -103,6 +103,18 @@ export const messageDequeueInstall = (params: {
                     num_attempts
                 INTO v_message;
 
+                SELECT
+                    ARRAY_AGG(
+                        JSONB_BUILD_OBJECT(
+                            'id', parent_message_id,
+                            'status', status,
+                            'result', result
+                        )
+                    ) AS data
+                FROM ${params.schema}.message_parent
+                WHERE message_id = v_message.id
+                INTO v_dependency_data;
+
                 UPDATE ${params.schema}.channel_state SET
                     current_concurrency = v_channel_state.current_concurrency + 1
                 WHERE name = v_channel_state.name;
@@ -128,7 +140,8 @@ export const messageDequeueInstall = (params: {
                     'result_code', ${valueNode(MessageDequeueResultCode.MESSAGE_DEQUEUED)},
                     'id', v_message.id,
                     'channel_name', v_channel_state.name,
-                    'payload', v_message.payload
+                    'payload', v_message.payload,
+                    'dependencies', COALESCE(v_dependency_data.data, ARRAY[]::JSONB[])
                 );
             END;
             $$ LANGUAGE plpgsql;

@@ -1,17 +1,25 @@
-import { MESSAGE_DEFAULT_NUM_ATTEMPTS, MESSAGE_DEFAULT_PRIORITY, MESSAGE_DEFAULT_PROCESSING_MS, MESSAGE_DEFAULT_LOCK_MS, MESSAGE_DEFAULT_NAME, MESSAGE_DEFAULT_DELAY_MS, MESSAGE_DEFAULT_LOCK_MS_FACTOR } from "@src/core/config"
+import { MESSAGE_DEFAULT_NUM_ATTEMPTS, MESSAGE_DEFAULT_PRIORITY, MESSAGE_DEFAULT_PROCESSING_MS, MESSAGE_DEFAULT_LOCK_MS, MESSAGE_DEFAULT_NAME, MESSAGE_DEFAULT_DELAY_MS, MESSAGE_DEFAULT_LOCK_MS_FACTOR, MESSAGE_DEFAULT_DELETE_MS } from "@src/core/config"
 import type { DatabaseClient } from "@src/core/database-client"
-import { jobMessageEnqueueScheduleClear } from "@src/binding/job-message-enqueue-schedule-clear"
-import { jobMessageEnqueueScheduleSet } from "@src/binding/job-message-enqueue-schedule-set"
+import { jobJobMessageCreateScheduleClear } from "@src/binding/job-job-message-create-schedule-clear"
+import { jobJobMessageCreateScheduleSet } from "@src/binding/job-job-message-create-schedule-set"
 import { createHash } from "crypto"
 
 export const getUniqueJobName = (params: {
     channel: string | null
     name: string
 }) => {
-    return createHash("sha256")
+    const suffix = createHash("sha256")
         .update(JSON.stringify(params.channel))
         .update(params.name)
         .digest("hex")
+        .slice(0, 8)
+
+    return [
+        "schedule",
+        params.channel,
+        params.name,
+        suffix
+    ].filter(Boolean).join("-")
 
 }
 
@@ -45,8 +53,9 @@ export class MessageScheduleModule {
         maxProcessingMs?: number
         lockMsFactor?: number
         delayMs?: number
+        deleteMs?: number
     }) {
-        return jobMessageEnqueueScheduleSet({
+        return jobJobMessageCreateScheduleSet({
             cronExpr: params.cronExpr,
             databaseClient: params.databaseClient,
             schema: this.schema,
@@ -62,6 +71,7 @@ export class MessageScheduleModule {
                 lockMs: params.lockMs ?? MESSAGE_DEFAULT_LOCK_MS,
                 lockMsFactor: params.lockMsFactor ?? MESSAGE_DEFAULT_LOCK_MS_FACTOR,
                 delayMs: params.delayMs ?? MESSAGE_DEFAULT_DELAY_MS,
+                deleteMs: params.deleteMs ?? MESSAGE_DEFAULT_DELETE_MS,
             }
         })
     }
@@ -69,7 +79,7 @@ export class MessageScheduleModule {
     async clear(params: {
         databaseClient: DatabaseClient
     }) {
-        return jobMessageEnqueueScheduleClear({
+        return jobJobMessageCreateScheduleClear({
             databaseClient: params.databaseClient,
             name: this.jobName,
             schema: this.schema,

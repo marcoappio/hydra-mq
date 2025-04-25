@@ -2,12 +2,13 @@ import { Queue } from "@src/queue"
 import { beforeEach, describe, expect, it } from "bun:test"
 import { Pool } from "pg"
 import { sql, valueNode } from "@src/core/sql"
-import { messageEnqueue, type MessageEnqueueResultMessageEnqueued } from "@src/binding/message-enqueue"
+import { messageCreate } from "@src/binding/message-create"
 import { messageFail } from "@src/binding/message-fail"
 import { messageRelease } from "@src/binding/message-release"
 import { messageDequeue }  from "@src/binding/message-dequeue"
-import { MessageStatus } from "@src/schema/message"
-import { JobType } from "@src/schema/job"
+import { MessageStatus } from "@src/schema/enum/message-status"
+import { JobType } from "@src/schema/enum/job-type"
+import { randomUUID } from "crypto"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
@@ -27,44 +28,53 @@ const testMessageParams = {
     channelPriority: null,
     name: null,
     numAttempts: 1,
-    maxProcessingMs: 60,
-    lockMs: 2,
+    maxProcessingMs: 60_000,
+    lockMs: 0,
     lockMsFactor: 2,
     delayMs: 0,
+    deleteMs: 0,
     dependsOn: [],
-    dependencyFailureCascade: true,
 }
 
 describe("messageFail", async () => {
-    it("correct reports on missing message", async () => {
-        const enqueueResult = await messageEnqueue({
+    it("reports when message not found", async () => {
+        const failResult = await messageFail({
+            databaseClient: pool,
+            schema: "test",
+            id: randomUUID(),
+            exhaust: false
+        })
+        expect(failResult.resultType).toBe("MESSAGE_NOT_FOUND")
+    })
+
+    it("reports message with invalid status", async () => {
+        const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ...testMessageParams
-        }) as MessageEnqueueResultMessageEnqueued
+        })
 
-        const rejectResult = await messageFail({
+        const failResult = await messageFail({
             databaseClient: pool,
             schema: "test",
-            id: enqueueResult.messageId,
+            id: createResult.id,
             exhaust: false
         })
-        expect(rejectResult.resultType).toBe("MESSAGE_NOT_FOUND")
-
+        expect(failResult.resultType).toBe("MESSAGE_STATUS_INVALID")
     })
 
     it("correctly locks messages when attempts are remaining", async () => {
-        const enqueueResult = await messageEnqueue({
+        const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ...testMessageParams,
             numAttempts: 2,
-        }) as MessageEnqueueResultMessageEnqueued
+        })
 
         await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: enqueueResult.messageId,
+            id: createResult.id,
         })
 
         await messageDequeue({
@@ -72,17 +82,26 @@ describe("messageFail", async () => {
             schema: "test",
         })
 
-        const dequeueResult = await messageFail({
+        const failResult = await messageFail({
             databaseClient: pool,
             schema: "test",
-            id: enqueueResult.messageId,
+            id: createResult.id,
             exhaust: false
         })
-        expect(dequeueResult.resultType).toBe("MESSAGE_LOCKED")
+        expect(failResult.resultType).toBe("MESSAGE_LOCKED")
+
+        const channelState = await pool.query(sql `
+            SELECT * FROM test.channel_state
+        `).then(res => res.rows[0])
+        expect(channelState).toMatchObject({
+            name: testMessageParams.channelName,
+            current_size: 1,
+            current_concurrency: 0,
+        })
 
         const status = await pool.query(sql `
             SELECT status FROM test.message
-            WHERE id = ${valueNode(enqueueResult.messageId)}
+            WHERE id = ${valueNode(createResult.id)}
         `).then(res => res.rows[0].status)
         expect(status).toBe(MessageStatus.LOCKED)
 
@@ -90,76 +109,21 @@ describe("messageFail", async () => {
             SELECT params FROM test.job
             WHERE type = ${valueNode(JobType.MESSAGE_UNLOCK)}
         `).then(res => res.rows[0].params)
-        expect(lockParams).toMatchObject({ id: enqueueResult.messageId })
-
-        const numFinalizeJobs = await pool.query(sql `
-            SELECT params FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_FINALIZE)}
-        `).then(res => res.rowCount)
-        expect(numFinalizeJobs).toEqual(0)
-
+        expect(lockParams).toMatchObject({ id: createResult.id })
     })
 
     it("correctly exhausts messages when exhaust is forced", async () => {
-        const enqueueResult = await messageEnqueue({
+        const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ...testMessageParams,
             numAttempts: 10,
-        }) as MessageEnqueueResultMessageEnqueued
-
-        const releaseResult = await messageRelease({
-            databaseClient: pool,
-            schema: "test",
-            id: enqueueResult.messageId,
         })
-        expect(releaseResult.resultType).toBe("MESSAGE_ACCEPTED")
-
-        const dequeueResult = await messageDequeue({
-            databaseClient: pool,
-            schema: "test",
-        })
-        expect(dequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
-
-        const failResult = await messageFail({
-            databaseClient: pool,
-            schema: "test",
-            id: enqueueResult.messageId,
-            exhaust: true
-        })
-        expect(failResult.resultType).toBe("MESSAGE_EXHAUSTED")
-
-        const status = await pool.query(sql `
-            SELECT status FROM test.message
-            WHERE id = ${valueNode(enqueueResult.messageId)}
-        `).then(res => res.rows[0].status)
-        expect(status).toBe(MessageStatus.EXHAUSTED)
-
-        const finalizeParams = await pool.query(sql `
-            SELECT params FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_FINALIZE)}
-        `).then(res => res.rows[0].params)
-        expect(finalizeParams).toMatchObject({ id: enqueueResult.messageId })
-
-        const numUnlockJobs = await pool.query(sql `
-            SELECT params FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_UNLOCK)}
-        `).then(res => res.rowCount)
-        expect(numUnlockJobs).toEqual(0)
-
-    })
-
-    it("correctly exhausts messages when no attempts are remaining", async () => {
-        const enqueueResult = await messageEnqueue({
-            databaseClient: pool,
-            schema: "test",
-            ...testMessageParams
-        }) as MessageEnqueueResultMessageEnqueued
 
         await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: enqueueResult.messageId,
+            id: createResult.id,
         })
 
         await messageDequeue({
@@ -167,32 +131,107 @@ describe("messageFail", async () => {
             schema: "test",
         })
 
-        const dequeueResult = await messageFail({
+        const failResult = await messageFail({
             databaseClient: pool,
             schema: "test",
-            id: enqueueResult.messageId,
-            exhaust: false
+            id: createResult.id,
+            exhaust: true
         })
-        expect(dequeueResult.resultType).toBe("MESSAGE_EXHAUSTED")
+        expect(failResult.resultType).toBe("MESSAGE_EXHAUSTED")
 
-        const status = await pool.query(sql `
-            SELECT status FROM test.message
-            WHERE id = ${valueNode(enqueueResult.messageId)}
-        `).then(res => res.rows[0].status)
-        expect(status).toBe(MessageStatus.EXHAUSTED)
+        const channelState = await pool.query(sql `
+            SELECT * FROM test.channel_state
+        `).then(res => res.rows[0])
+        expect(channelState).toMatchObject({
+            name: testMessageParams.channelName,
+            current_size: 0,
+            current_concurrency: 0,
+        })
 
-        const finalizeParams = await pool.query(sql `
-            SELECT params FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_FINALIZE)}
-        `).then(res => res.rows[0].params)
-        expect(finalizeParams).toMatchObject({ id: enqueueResult.messageId })
+        const message = await pool.query(sql `
+            SELECT * FROM test.message
+            WHERE id = ${valueNode(createResult.id)}
+        `).then(res => res.rows[0])
+        expect(message).toMatchObject({
+            status: MessageStatus.EXHAUSTED
+        })
 
-        const numUnlockJobs = await pool.query(sql `
-            SELECT params FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_UNLOCK)}
-        `).then(res => res.rowCount)
-        expect(numUnlockJobs).toEqual(0)
+        const deleteJob = await pool.query(sql `
+            SELECT * FROM test.job
+            WHERE type = ${valueNode(JobType.MESSAGE_DELETE)}
+        `).then(res => res.rows[0])
+        expect(deleteJob).toMatchObject({
+            params: { id: createResult.id },
+        })
+    })
 
+    it("correctly exhausts messages when no attempts are remaining", async () => {
+        const createResult = await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ...testMessageParams,
+            numAttempts: 1
+        })
+
+        await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ...testMessageParams,
+            dependsOn: [createResult.id],
+        })
+
+        await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: createResult.id,
+        })
+
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
+
+        const failResult = await messageFail({
+            databaseClient: pool,
+            schema: "test",
+            id: createResult.id,
+            exhaust: true
+        })
+        expect(failResult.resultType).toBe("MESSAGE_EXHAUSTED")
+
+        const channelState = await pool.query(sql `
+            SELECT * FROM test.channel_state
+        `).then(res => res.rows[0])
+        expect(channelState).toMatchObject({
+            name: testMessageParams.channelName,
+            current_size: 0,
+            current_concurrency: 0,
+        })
+
+        const message = await pool.query(sql `
+            SELECT * FROM test.message
+            WHERE id = ${valueNode(createResult.id)}
+        `).then(res => res.rows[0])
+        expect(message).toMatchObject({
+            status: MessageStatus.EXHAUSTED
+        })
+
+        const deleteJob = await pool.query(sql `
+            SELECT * FROM test.job
+            WHERE type = ${valueNode(JobType.MESSAGE_DELETE)}
+        `).then(res => res.rows[0])
+        expect(deleteJob).toMatchObject({
+            params: { id: createResult.id },
+        })
+
+        const dependency = await pool.query(sql `
+            SELECT * FROM test.message_parent
+            WHERE parent_message_id = ${valueNode(createResult.id)}
+        `).then(res => res.rows[0])
+        expect(dependency).toMatchObject({
+            message_id: expect.any(String),
+            status: MessageStatus.EXHAUSTED,
+        })
     })
 })
 

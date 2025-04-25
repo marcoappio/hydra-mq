@@ -3,12 +3,12 @@ import { randomUUID } from "crypto"
 import { beforeEach, describe, expect, it } from "bun:test"
 import { Pool } from "pg"
 import { messageRelease } from "@src/binding/message-release"
-import { messageEnqueue, type MessageEnqueueResultMessageEnqueued } from "@src/binding/message-enqueue"
+import { messageCreate } from "@src/binding/message-create"
 import { sql, valueNode } from "@src/core/sql"
-import { JobType } from "@src/schema/job"
-import { MessageStatus } from "@src/schema/message"
+import { MessageStatus } from "@src/schema/enum/message-status"
 import { channelPolicySet } from "@src/binding/channel-policy-set"
-import { messageDependencyResolve } from "@src/binding/message-dependency-resolve"
+import { messageDequeue } from "@src/binding/message-dequeue"
+import { JobType } from "@src/schema/enum/job-type"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
@@ -28,12 +28,12 @@ const messageParams = {
     channelPriority: null,
     name: null,
     numAttempts: 1,
-    maxProcessingMs: 60,
-    lockMs: 5,
+    maxProcessingMs: 60_000,
+    lockMs: 0,
     lockMsFactor: 2,
-    delayMs: 30,
-    dependsOn: [],
-    dependencyFailureCascade: true,
+    delayMs: 0,
+    deleteMs: 0,
+    dependsOn: []
 }
 
 describe("messageRelease", async () => {
@@ -47,88 +47,26 @@ describe("messageRelease", async () => {
         expect(result.resultType).toBe("MESSAGE_NOT_FOUND")
     })
 
-    it("sets message to unsatisfied when deps are not met", async () => {
-        const firstEnqueueResult = await messageEnqueue({
+    it("reports when message has invalid status", async () => {
+        const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(firstEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
-
-        const secondEnqueueResult = await messageEnqueue({
-            databaseClient: pool,
-            schema: "test",
-            ... messageParams,
-            dependsOn: [firstEnqueueResult.messageId]
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(secondEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
-
-        await messageDependencyResolve({
-            databaseClient: pool,
-            schema: "test",
-            id: secondEnqueueResult.messageId,
-            isSuccess: false
         })
+
+        const firstReleaseResult = await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: createResult.id,
+        })
+        expect(firstReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
 
         const secondReleaseResult = await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: secondEnqueueResult.messageId,
+            id: createResult.id,
         })
-        expect(secondReleaseResult.resultType).toBe("MESSAGE_UNSATISFIED")
-
-        const status = await pool.query(sql `
-            SELECT status FROM test.message
-            WHERE id = ${valueNode(secondEnqueueResult.messageId)}
-        `).then(res => res.rows[0].status)
-        expect(status).toBe(MessageStatus.UNSATISFIED)
-
-        const channelState = await pool.query(sql `
-            SELECT * FROM test.channel_state
-            WHERE name = ${valueNode(messageParams.channelName)}
-        `).then(res => res.rows[0])
-        expect(channelState).toMatchObject({
-            current_size: 0,
-            current_concurrency: 0,
-        })
-
-        const finalizeParams = await pool.query(sql `
-            SELECT params FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_FINALIZE)}
-        `).then(res => res.rows[0].params)
-        expect(finalizeParams).toMatchObject({ id: secondEnqueueResult.messageId })
-    })
-
-    it("doesnt set a message to unsatisfied when deps are not met but cascade is false", async () => {
-        const firstEnqueueResult = await messageEnqueue({
-            databaseClient: pool,
-            schema: "test",
-            ... messageParams,
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(firstEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
-
-        const secondEnqueueResult = await messageEnqueue({
-            databaseClient: pool,
-            schema: "test",
-            ... messageParams,
-            dependsOn: [firstEnqueueResult.messageId],
-            dependencyFailureCascade: false
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(secondEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
-
-        await messageDependencyResolve({
-            databaseClient: pool,
-            schema: "test",
-            id: secondEnqueueResult.messageId,
-            isSuccess: false
-        })
-
-        const secondReleaseResult = await messageRelease({
-            databaseClient: pool,
-            schema: "test",
-            id: secondEnqueueResult.messageId,
-        })
-        expect(secondReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
+        expect(secondReleaseResult.resultType).toBe("MESSAGE_STATUS_INVALID")
     })
 
     it("drops a message when at capacity", async () => {
@@ -140,76 +78,93 @@ describe("messageRelease", async () => {
             maxSize: 0
         })
 
-        const enqueueResult = await messageEnqueue({
+        const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(enqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
+
+        await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ...messageParams,
+            dependsOn: [createResult.id],
+        })
 
         const releaseResult = await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: enqueueResult.messageId,
+            id: createResult.id,
         })
         expect(releaseResult.resultType).toBe("MESSAGE_DROPPED")
 
         const channelState = await pool.query(sql `
             SELECT * FROM test.channel_state
-            WHERE name = ${valueNode(messageParams.channelName)}
         `).then(res => res.rows[0])
         expect(channelState).toMatchObject({
+            name: messageParams.channelName,
             current_size: 0,
             current_concurrency: 0,
         })
 
-        const status = await pool.query(sql `
-            SELECT status FROM test.message
-            WHERE id = ${valueNode(enqueueResult.messageId)}
-        `).then(res => res.rows[0].status)
-        expect(status).toBe(MessageStatus.DROPPED)
+        const message = await pool.query(sql `
+            SELECT * FROM test.message
+            WHERE id = ${valueNode(createResult.id)}
+        `).then(res => res.rows[0])
+        expect(message).toMatchObject({
+            status: MessageStatus.DROPPED
+        })
 
-        const finalizeParams = await pool.query(sql `
-            SELECT params FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_FINALIZE)}
-        `).then(res => res.rows[0].params)
-        expect(finalizeParams).toMatchObject({ id: enqueueResult.messageId })
+        const deleteJob = await pool.query(sql `
+            SELECT * FROM test.job
+            WHERE type = ${valueNode(JobType.MESSAGE_DELETE)}
+        `).then(res => res.rows[0])
+        expect(deleteJob).toMatchObject({
+            params: { id: createResult.id },
+        })
+
+        const dependency = await pool.query(sql `
+            SELECT * FROM test.message_parent
+            WHERE parent_message_id = ${valueNode(createResult.id)}
+        `).then(res => res.rows[0])
+        expect(dependency).toMatchObject({
+            message_id: expect.any(String),
+            status: MessageStatus.DROPPED,
+        })
+
     })
 
     it("doesn't dedupe a message when already processed", async () => {
-        const firstEnqueueResult = await messageEnqueue({
+        const firstCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
             name: "foo",
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(firstEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
 
-        const secondEnqueueResult = await messageEnqueue({
+        const secondCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
             name: "foo",
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(secondEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
 
         const firstReleaseResult = await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: firstEnqueueResult.messageId,
+            id: firstCreateResult.id,
         })
         expect(firstReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
 
-        await pool.query(sql `
-            UPDATE test.message
-            SET is_processed = TRUE
-            WHERE id = ${valueNode(firstEnqueueResult.messageId)}
-        `)
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
 
         const secondReleaseResult = await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: secondEnqueueResult.messageId,
+            id: secondCreateResult.id,
         })
         expect(secondReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
 
@@ -219,80 +174,92 @@ describe("messageRelease", async () => {
         `).then(res => res.rows[0])
         expect(channelState).toMatchObject({
             current_size: 2,
-            current_concurrency: 0,
+            current_concurrency: 1,
         })
     })
 
     it("dedupes a message when appropriate", async () => {
-        const firstEnqueueResult = await messageEnqueue({
+        const firstCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
             name: "foo",
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(firstEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
 
-        const secondEnqueueResult = await messageEnqueue({
+        const secondCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
             name: "foo",
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(secondEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
 
         const firstReleaseResult = await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: firstEnqueueResult.messageId,
+            id: firstCreateResult.id,
         })
         expect(firstReleaseResult.resultType).toBe("MESSAGE_ACCEPTED")
 
         const secondReleaseResult = await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: secondEnqueueResult.messageId,
+            id: secondCreateResult.id,
         })
         expect(secondReleaseResult.resultType).toBe("MESSAGE_DEDUPLICATED")
 
+        await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ...messageParams,
+            dependsOn: [secondCreateResult.id],
+        })
+
         const channelState = await pool.query(sql `
             SELECT * FROM test.channel_state
-            WHERE name = ${valueNode(messageParams.channelName)}
         `).then(res => res.rows[0])
         expect(channelState).toMatchObject({
+            name: messageParams.channelName,
             current_size: 1,
             current_concurrency: 0,
         })
 
-        const secondStatus = await pool.query(sql `
-            SELECT status FROM test.message
-            WHERE id = ${valueNode(secondEnqueueResult.messageId)}
-        `).then(res => res.rows[0].status)
-        expect(secondStatus).toBe(MessageStatus.DEDUPLICATED)
+        const message = await pool.query(sql `
+            SELECT * FROM test.message
+            WHERE id = ${valueNode(secondCreateResult.id)}
+        `).then(res => res.rows[0])
+        expect(message).toMatchObject({
+            status: MessageStatus.DEDUPLICATED
+        })
 
-        const finalizeParams = await pool.query(sql `
-            SELECT params FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_FINALIZE)}
-        `).then(res => res.rows[0].params)
-        expect(finalizeParams).toMatchObject({ id: secondEnqueueResult.messageId })
+        const deleteJob = await pool.query(sql `
+            SELECT * FROM test.job
+            WHERE type = ${valueNode(JobType.MESSAGE_DELETE)}
+        `).then(res => res.rows[0])
+        expect(deleteJob).toMatchObject({
+            params: { id: secondCreateResult.id },
+        })
+
+        const dependency = await pool.query(sql `
+            SELECT * FROM test.message_parent
+            WHERE parent_message_id = ${valueNode(secondCreateResult.id)}
+        `).then(res => res.rows[0])
+        expect(dependency).toMatchObject({
+            message_id: expect.any(String),
+            status: MessageStatus.DEDUPLICATED,
+        })
     })
 
-    it("correctly releases messages and sets up channel state", async () => {
-        const enqueueResult = await messageEnqueue({
+    it("correctly accepts messages and sets up channel state", async () => {
+        const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(enqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
-
-        const job = await pool.query(sql `
-            SELECT * FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_RELEASE)}
-        `).then(res => res.rows[0])
+        })
 
         const result = await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: enqueueResult.messageId,
+            id: createResult.id,
         })
         expect(result.resultType).toBe("MESSAGE_ACCEPTED")
 
@@ -303,36 +270,34 @@ describe("messageRelease", async () => {
 
         const message = await pool.query(sql `
             SELECT * FROM test.message    
-            WHERE id = ${valueNode(enqueueResult.messageId)}
+            WHERE id = ${valueNode(createResult.id)}
         `).then(res => res.rows[0])
 
         expect(message).toMatchObject({
             status: MessageStatus.ACCEPTED,
         })
 
-        expect(job.process_after.getTime()).toEqual(message.created_at.getTime() + messageParams.delayMs)
-
         expect(channelState).toMatchObject({
             name: messageParams.channelName,
             max_concurrency: null,
+            max_size: null,
             current_size: 1,
             current_concurrency: 0,
             next_message_id: message.id,
             next_priority: null
         })
 
-        const secondEnqueueResult = await messageEnqueue({
+        const secondCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ... messageParams,
             priority: 100
-        }) as MessageEnqueueResultMessageEnqueued
-        expect(secondEnqueueResult.resultType).toBe("MESSAGE_ENQUEUED")
+        })
 
         const secondResult = await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: secondEnqueueResult.messageId,
+            id: secondCreateResult.id,
         })
         expect(secondResult.resultType).toBe("MESSAGE_ACCEPTED")
 
@@ -344,6 +309,7 @@ describe("messageRelease", async () => {
         expect(channelState).toMatchObject({
             name: messageParams.channelName,
             max_concurrency: null,
+            max_size: null,
             current_size: 2,
             current_concurrency: 0,
             next_message_id: message.id,

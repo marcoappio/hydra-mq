@@ -7,6 +7,7 @@ describe("getUniqueJobName", () => {
         const pairs : [string | null, string][] = [
             ["foo", "bar"],
             [null, "foobar"],
+            ["null", "foobar"],
             ["foobar", ""],
             ["", "foobar"],
             ["\"foo\"", "\"bar\""],

@@ -1,7 +1,7 @@
-import { MESSAGE_DEFAULT_NUM_ATTEMPTS, MESSAGE_DEFAULT_PRIORITY, MESSAGE_DEFAULT_PROCESSING_MS, MESSAGE_DEFAULT_LOCK_MS, MESSAGE_DEFAULT_LOCK_MS_FACTOR, MESSAGE_DEFAULT_DELAY_MS, MESSAGE_DEFAULT_NAME, MESSAGE_DEFAULT_DEPENDENCY_FAILURE_CASCADE } from "@src/core/config"
 import type { DatabaseClient } from "@src/core/database-client"
-import { messageEnqueue } from "@src/binding/message-enqueue"
+import { messageCreate } from "@src/binding/message-create"
 import { MessageScheduleModule } from "@src/queue/channel/message/schedule"
+import { MESSAGE_DEFAULT_NAME, MESSAGE_DEFAULT_NUM_ATTEMPTS, MESSAGE_DEFAULT_PRIORITY, MESSAGE_DEFAULT_LOCK_MS, MESSAGE_DEFAULT_LOCK_MS_FACTOR, MESSAGE_DEFAULT_DELAY_MS, MESSAGE_DEFAULT_PROCESSING_MS, MESSAGE_DEFAULT_DELETE_MS } from "@src/core/config"
 
 export class ChannelMessageModule {
 
@@ -24,7 +24,7 @@ export class ChannelMessageModule {
         })
     }
 
-    async enqueue(params: {
+    async create(params: {
         databaseClient: DatabaseClient
         name?: string
         numAttempts?: number
@@ -35,10 +35,10 @@ export class ChannelMessageModule {
         maxProcessingMs?: number
         lockMsFactor?: number
         delayMs?: number,
+        deleteMs?: number,
         dependsOn?: string[],
-        dependencyFailureCascade?: boolean
     }) {
-        return messageEnqueue({
+        return await messageCreate({
             databaseClient: params.databaseClient,
             name: params.name ?? MESSAGE_DEFAULT_NAME,
             numAttempts: params.numAttempts ?? MESSAGE_DEFAULT_NUM_ATTEMPTS,
@@ -52,7 +52,7 @@ export class ChannelMessageModule {
             delayMs: params.delayMs ?? MESSAGE_DEFAULT_DELAY_MS,
             maxProcessingMs: params.maxProcessingMs ?? MESSAGE_DEFAULT_PROCESSING_MS,
             dependsOn: params.dependsOn ?? [],
-            dependencyFailureCascade: params.dependencyFailureCascade ?? MESSAGE_DEFAULT_DEPENDENCY_FAILURE_CASCADE,
+            deleteMs: params.deleteMs ?? MESSAGE_DEFAULT_DELETE_MS,
         })
     }
 

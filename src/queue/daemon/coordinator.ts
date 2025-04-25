@@ -3,7 +3,7 @@ import { EggTimer } from "@src/core/egg-timer"
 import { Semaphore } from "@src/core/semaphore"
 import type { HydraEventHandler } from "@src/queue/daemon/event"
 import { jobProcess } from "@src/binding/job-process"
-import { JobType } from "@src/schema/job"
+import { JobType } from "@src/schema/enum/job-type"
 
 export class DaemonCoordinator {
 
@@ -50,38 +50,66 @@ export class DaemonCoordinator {
                 if (result.type === JobType.MESSAGE_RELEASE) {
                     if (result.result.resultType === "MESSAGE_ACCEPTED") {
                         this.eventHandler({
-                            eventType: "MESSAGE_ACCEPTED",
+                            eventType: "MESSAGE_RELEASED",
+                            eventResult: "MESSAGE_ACCEPTED",
                             messageId: result.messageId,
                         })
                     } else if (result.result.resultType === "MESSAGE_DEDUPLICATED") {
                         this.eventHandler({
-                            eventType: "MESSAGE_DEDUPLICATED",
+                            eventType: "MESSAGE_RELEASED",
+                            eventResult: "MESSAGE_DEDUPLICATED",
                             messageId: result.messageId,
                         })
                     } else if (result.result.resultType === "MESSAGE_DROPPED") {
                         this.eventHandler({
-                            eventType: "MESSAGE_DROPPED",
+                            eventType: "MESSAGE_RELEASED",
+                            eventResult: "MESSAGE_DROPPED",
                             messageId: result.messageId,
                         })
-                    } else if (result.result.resultType === "MESSAGE_UNSATISFIED") {
+                    } else if (result.result.resultType === "MESSAGE_NOT_FOUND") {
                         this.eventHandler({
-                            eventType: "MESSAGE_UNSATISFIED",
                             messageId: result.messageId,
+                            eventType: "MESSAGE_RELEASED",
+                            eventResult: "MESSAGE_NOT_FOUND"
                         })
-                    }
-                } else if (result.type === JobType.MESSAGE_FINALIZE) {
-                    if (result.result.resultType === "MESSAGE_DELETED") {
+                    } else if (result.result.resultType === "MESSAGE_DEPENDENCIES_OUTSTANDING") {
                         this.eventHandler({
-                            eventType: "MESSAGE_DELETED",
                             messageId: result.messageId,
+                            eventType: "MESSAGE_RELEASED",
+                            eventResult: "MESSAGE_DEPENDENCIES_OUTSTANDING"
                         })
+                    } else if (result.result.resultType === "MESSAGE_STATUS_INVALID") {
+                        this.eventHandler({
+                            messageId: result.messageId,
+                            eventType: "MESSAGE_RELEASED",
+                            eventResult: "MESSAGE_STATUS_INVALID",
+                        })
+                    } else {
+                        result.result satisfies never
+                        throw new Error("Unexpected result")
                     }
                 } else if (result.type === JobType.MESSAGE_UNLOCK) {
                     if (result.result.resultType === "MESSAGE_ACCEPTED") {
                         this.eventHandler({
-                            eventType: "MESSAGE_ACCEPTED",
+                            eventType: "MESSAGE_UNLOCKED",
+                            eventResult: "MESSAGE_ACCEPTED",
                             messageId: result.messageId,
                         })
+                    } else if (result.result.resultType === "MESSAGE_NOT_FOUND") {
+                        this.eventHandler({
+                            messageId: result.messageId,
+                            eventType: "MESSAGE_UNLOCKED",
+                            eventResult: "MESSAGE_NOT_FOUND",
+                        })
+                    } else if (result.result.resultType === "MESSAGE_STATUS_INVALID") {
+                        this.eventHandler({
+                            messageId: result.messageId,
+                            eventType: "MESSAGE_UNLOCKED",
+                            eventResult: "MESSAGE_STATUS_INVALID",
+                        })
+                    } else {
+                        result.result satisfies never
+                        throw new Error("Unexpected result")
                     }
                 } else if (result.type === JobType.MESSAGE_SWEEP_MANY) {
                     if (result.result.ids.length > 0) {
@@ -93,29 +121,111 @@ export class DaemonCoordinator {
                 } else if (result.type === JobType.MESSAGE_FAIL) {
                     if (result.result.resultType === "MESSAGE_LOCKED") {
                         this.eventHandler({
-                            eventType: "MESSAGE_LOCKED",
+                            eventType: "MESSAGE_FAILED",
+                            eventResult: "MESSAGE_LOCKED",
                             messageId: result.messageId,
                         })
                     } else if (result.result.resultType === "MESSAGE_EXHAUSTED") {
                         this.eventHandler({
-                            eventType: "MESSAGE_EXHAUSTED",
+                            eventType: "MESSAGE_FAILED",
+                            eventResult: "MESSAGE_EXHAUSTED",
                             messageId: result.messageId,
                         })
-                    }
-                } else if (result.type === JobType.MESSAGE_ENQUEUE) {
-                    if (result.result.resultType === "MESSAGE_ENQUEUED") {
+                    } else if (result.result.resultType === "MESSAGE_NOT_FOUND") {
                         this.eventHandler({
-                            eventType: "MESSAGE_ENQUEUED",
-                            messageId: result.result.messageId,
+                            messageId: result.messageId,
+                            eventType: "MESSAGE_FAILED",
+                            eventResult: "MESSAGE_NOT_FOUND",
                         })
-                    }
-                } else if (result.type === JobType.MESSAGE_DEPENDENCY_RESOLVE) {
-                    if (result.result.resultType === "MESSAGE_DEPENDENCY_RESOLVED") {
+                    } else if (result.result.resultType === "MESSAGE_STATUS_INVALID") {
                         this.eventHandler({
-                            eventType: "MESSAGE_DEPENDENCY_RESOLVED",
+                            messageId: result.messageId,
+                            eventType: "MESSAGE_FAILED",
+                            eventResult: "MESSAGE_STATUS_INVALID",
+                        })
+                    } else {
+                        result.result satisfies never
+                        throw new Error("Unexpected result")
+                    }
+                } else if (result.type === JobType.MESSAGE_CREATE) {
+                    if (result.result.resultType === "MESSAGE_CREATED") {
+                        this.eventHandler({
+                            eventType: "MESSAGE_CREATED",
+                            messageId: result.result.id
+                        })
+                    } else {
+                        result.result.resultType satisfies never
+                        throw new Error("Unexpected result")
+                    }
+                } else if (result.type === JobType.MESSAGE_DEPENDENCY_UPDATE) {
+                    if (result.result.resultType === "MESSAGE_DEPENDENCY_UPDATED") {
+                        this.eventHandler({
+                            eventType: "MESSAGE_DEPENDENCY_UPDATED",
+                            eventResult: "MESSAGE_DEPENDENCY_UPDATED",
                             messageId: result.messageId,
                         })
+                    } else if (result.result.resultType === "MESSAGE_NOT_FOUND") {
+                        this.eventHandler({
+                            messageId: result.messageId,
+                            eventType: "MESSAGE_DEPENDENCY_UPDATED",
+                            eventResult: "MESSAGE_NOT_FOUND",
+                        })
+                    } else if (result.result.resultType === "MESSAGE_STATUS_INVALID") {
+                        this.eventHandler({
+                            messageId: result.messageId,
+                            eventType: "MESSAGE_DEPENDENCY_UPDATED",
+                            eventResult: "MESSAGE_STATUS_INVALID",
+                        })
+                    } else {
+                        result.result satisfies never
+                        throw new Error("Unexpected result")
                     }
+                } else if (result.type === JobType.MESSAGE_DELETE) {
+                    if (result.result.resultType === "MESSAGE_DELETED") {
+                        this.eventHandler({
+                            eventType: "MESSAGE_DELETED",
+                            eventResult: "MESSAGE_DELETED",
+                            messageId: result.messageId,
+                        })
+                    } else if (result.result.resultType === "MESSAGE_NOT_FOUND") {
+                        this.eventHandler({
+                            messageId: result.messageId,
+                            eventType: "MESSAGE_DELETED",
+                            eventResult: "MESSAGE_NOT_FOUND",
+                        })
+                    } else if (result.result.resultType === "MESSAGE_STATUS_INVALID") {
+                        this.eventHandler({
+                            messageId: result.messageId,
+                            eventType: "MESSAGE_DELETED",
+                            eventResult: "MESSAGE_STATUS_INVALID",
+                        })
+                    } else {
+                        result.result satisfies never
+                        throw new Error("Unexpected result")
+                    }
+                } else if (result.type === JobType.CHANNEL_POLICY_CLEAR) {
+                    this.eventHandler({
+                        eventType: "CHANNEL_POLICY_CLEARED",
+                        channelName: result.channelName,
+                    })
+                } else if (result.type === JobType.CHANNEL_POLICY_SET) {
+                    this.eventHandler({
+                        eventType: "CHANNEL_POLICY_SET",
+                        channelName: result.channelName,
+                    })
+                } else if (result.type === JobType.JOB_MESSAGE_CREATE_SCHEDULE_CLEAR) {
+                    this.eventHandler({
+                        eventType: "JOB_MESSAGE_CREATE_SCHEDULE_CLEARED",
+                        jobName: result.jobName,
+                    })
+                } else if (result.type === JobType.JOB_MESSAGE_CREATE_SCHEDULE_SET) {
+                    this.eventHandler({
+                        eventType: "JOB_MESSAGE_CREATE_SCHEDULE_SET",
+                        jobName: result.jobName,
+                    })
+                } else {
+                    result satisfies never
+                    throw new Error("Unexpected result")
                 }
             } else {
                 result satisfies never
