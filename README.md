@@ -78,7 +78,7 @@ Channels provide multi-tenancy support within HydraMQ. They can be thought of as
     await queue
         .channel("my-channel")
         .message
-        .enqueue({ 
+        .create({ 
             payload: `Ping: ${i}`, 
             databaseClient: pool 
         })
@@ -139,7 +139,7 @@ Messages can be prioritized. This will push messages to the "front" of their res
 ```typescript
 await queue
     .message
-    .enqueue({
+    .create({
         payload: "hello world",
         databaseClient: pool,
         priority: 10,
@@ -151,7 +151,7 @@ If you wish to prioritize work _within_ a particular channel without disrupting 
 ```typescript
 await queue
     .message
-    .enqueue({
+    .create({
         payload: "hello world",
         databaseClient: pool,
         priority: 10,
