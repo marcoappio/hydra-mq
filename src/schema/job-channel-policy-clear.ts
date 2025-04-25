@@ -15,7 +15,7 @@ export const jobChannelPolicyClearInstall = (params: {
             BEGIN
                 v_now := NOW();
                 v_params := JSONB_BUILD_OBJECT(
-                    'name', p_id
+                    'name', p_name
                 );
 
                 INSERT INTO ${params.schema}.job (
