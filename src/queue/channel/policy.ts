@@ -1,7 +1,7 @@
 import type { DatabaseClient } from "@src/core/database-client"
-import { jobJobMessageCreateScheduleClear } from "@src/binding/job-job-message-create-schedule-clear"
 import { jobChannelPolicySet } from "@src/binding/job-channel-policy-set"
 import { channelPolicySet } from "@src/binding/channel-policy-set"
+import { jobChannelPolicyClear } from "@src/binding/job-channel-policy-clear"
 
 export class ChannelPolicyModule {
 
@@ -46,7 +46,7 @@ export class ChannelPolicyModule {
     async clear(params: {
         databaseClient: DatabaseClient
     }) {
-        return jobJobMessageCreateScheduleClear({
+        return jobChannelPolicyClear({
             databaseClient: params.databaseClient,
             name: this.channel,
             schema: this.schema,
