@@ -3,7 +3,7 @@
 </div>
 <br/>
 
-A high performance Postgres message queue implementation for NodeJs/TypeScript. 
+A high performance Postgres multi-tenat message queue implementation for NodeJs/TypeScript. 
 
 Detailed API documentation available at: [HydraMQ API Docs](https://hydra-mq.marcoapp.io/).
 
@@ -13,6 +13,7 @@ Join our discord if you have any questions/issues: [Marco Discord](https://disco
 
   - High throughput.
   - Fine-grained settings for multi-tenancy concurrency and capacity.
+  - Multi-tenancy fairness via round robin scheduling.
   - Scheduled/repeating messages.
   - Inter-tenant *and* intra-tenant message prioritization options.
   - Retryable messages with customizable timeout and back-off strategy.
