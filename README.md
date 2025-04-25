@@ -228,14 +228,10 @@ try {
         payload: "parent"
     })
 
-    if(parentMessage.resultType !== "message.createD") {
-        throw new Error("Message failed to enqueue")
-    }
-
     const childMessage = queue.message.create({
         databaseClient: client,
         payload: "child",
-        dependsOn: [parentMessage.messageId]
+        dependsOn: [parentMessage.id]
     })
 
     await client.query("COMMIT")

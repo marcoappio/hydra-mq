@@ -34,7 +34,7 @@ const messageParams = {
     dependsOn: [],
 }
 
-describe("messageTargetDependencyUpdate", async () => {
+describe("messageDependencyUpdate", async () => {
 
     it("reports missing message", async () => {
         const resolveResults = await messageDependencyUpdate({

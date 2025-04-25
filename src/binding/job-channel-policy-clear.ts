@@ -1,7 +1,7 @@
 import type { DatabaseClient } from "@src/core/database-client"
 import { refNode, sql, valueNode } from "@src/core/sql"
 
-export const jobControlSet = async (params: {
+export const jobChannelPolicyClear = async (params: {
     databaseClient: DatabaseClient
     schema: string,
     id: string,
@@ -9,7 +9,7 @@ export const jobControlSet = async (params: {
     data: string | null
 }) => {
     await params.databaseClient.query(sql `
-        SELECT * FROM ${refNode(params.schema)}.job_control_set(
+        SELECT * FROM ${refNode(params.schema)}.job_channel_policy_clear(
             ${valueNode(params.id)},
             ${valueNode(params.isSuccess)},
             ${valueNode(params.data)}

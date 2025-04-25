@@ -121,7 +121,7 @@ describe("messageCreate", async () => {
         expect(numDepRows).toBe(1)
     })
 
-    it("creates deps for already resolved targets and releases", async () => {
+    it("creates deps for already resolved messages and releases", async () => {
         const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",

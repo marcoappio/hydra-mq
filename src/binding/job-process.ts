@@ -30,7 +30,7 @@ type QueryResultJobJobMessageCreateScheduleSetProcessed = {
     job_name: string
 }
 
-type QueryResultJobMessageTargetDependencyUpdateProcessed = {
+type QueryResultJobMessageDependencyUpdateProcessed = {
     result_code: JobProcessResultCode.JOB_PROCESSED,
     id: string
     type: JobType.MESSAGE_DEPENDENCY_UPDATE
@@ -118,14 +118,14 @@ type QueryResult =
     | QueryResultJobMessageFailProcessed
     | QueryResultJobMessageReleaseProcessed
     | QueryResultJobMessageSweepManyProcessed
-    | QueryResultJobMessageTargetDependencyUpdateProcessed
+    | QueryResultJobMessageDependencyUpdateProcessed
     | QueryResultJobMessageUnlockProcessed
 
 type ResultQueueEmpty = {
     resultType: "QUEUE_EMPTY"
 }
 
-type ResultJobMessageTargetDependencyUpdateProcessed = {
+type ResultJobMessageDependencyUpdateProcessed = {
     id: string
     resultType: "JOB_PROCESSED"
     name: string | null
@@ -220,7 +220,7 @@ type ResultJobJobScheduleSetMessageCreateProcessed = {
 
 export type JobProcessResult =
     | ResultQueueEmpty
-    | ResultJobMessageTargetDependencyUpdateProcessed
+    | ResultJobMessageDependencyUpdateProcessed
     | ResultJobMessageCreateProcessed
     | ResultJobMessageFailProcessed
     | ResultJobMessageReleaseProcessed
