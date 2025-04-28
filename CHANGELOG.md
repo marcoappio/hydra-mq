@@ -1,3 +1,15 @@
+# v0.8.4 (Mon Apr 28 2025)
+
+#### 🐛 Bug Fix
+
+- Add Favicon [#45](https://github.com/marcoappio/hydra-mq/pull/45) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.8.3 (Fri Apr 25 2025)
 
 #### 🐛 Bug Fix
