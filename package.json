@@ -26,7 +26,7 @@
   },
   "scripts": {
     "build": "bun run script/build.ts",
-    "generate-docs": "bun typedoc src/index.ts --plugin typedoc-github-theme",
+    "generate-docs": "bun typedoc src/index.ts --plugin typedoc-github-theme --favicon asset/favicon.ico",
     "lint": "eslint src --max-warnings=0",
     "release": "bun run build && auto shipit --only-publish-with-release-label",
     "typecheck": "tsc --noEmit"
