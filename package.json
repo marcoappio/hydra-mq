@@ -7,7 +7,7 @@
   },
   "packageManager": "bun@1.2.0",
   "type": "module",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "license": "MIT",
   "exports": {
     ".": {
