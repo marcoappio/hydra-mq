@@ -18,6 +18,7 @@ export class DaemonProcessorExecutionModule {
     private readonly promise: Promise<void>
     private readonly processorFn: ProcessorFn
     private readonly dequeueModule: DaemonProcessorDequeueModule
+    private isStopped : boolean
 
     constructor(params: {
         databaseClient: DatabaseClient
@@ -26,6 +27,7 @@ export class DaemonProcessorExecutionModule {
         processorFn: ProcessorFn
         schema: string
     }) {
+        this.isStopped = false
         this.schema = params.schema
         this.dequeueModule = params.dequeueModule
         this.processorFn = params.processorFn
@@ -57,6 +59,7 @@ export class DaemonProcessorExecutionModule {
                         name: dequeueResult.name,
                         priority: dequeueResult.priority,
                     },
+                    isStopped: () => this.isStopped,
                     setFail: () => {
                         processorResult = { resultType: "FAIL" }
                     },
@@ -183,6 +186,7 @@ export class DaemonProcessorExecutionModule {
     }
 
     async join() {
+        this.isStopped = true
         await this.promise
     }
 }
