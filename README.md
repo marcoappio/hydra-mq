@@ -3,7 +3,7 @@
 </div>
 <br/>
 
-A high performance Postgres multi-tenat message queue implementation for NodeJs/TypeScript. 
+A high performance Postgres multi-tenant message queue implementation for NodeJs/TypeScript. 
 
 Detailed API documentation available at: [HydraMQ API Docs](https://hydra-mq.marcoapp.io/).
 
