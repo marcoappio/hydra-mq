@@ -1,3 +1,15 @@
+# v0.9.1 (Mon May 19 2025)
+
+#### 🐛 Bug Fix
+
+- Add "isStopped" indicator [#48](https://github.com/marcoappio/hydra-mq/pull/48) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.9.0 (Mon May 19 2025)
 
 #### 🚀 Enhancement
