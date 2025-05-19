@@ -1,11 +1,16 @@
-import type { MessageDequeueResultDependency } from "@src/binding/message-dequeue"
 
 export type ProcessorFnParams = {
-    messageId: string
-    channelName: string
-    dependencies: MessageDequeueResultDependency[]
-    setFail: (params? : { exhaust?: boolean }) => void
-    setResults: (result: string) => void
+    message: {
+        id: string
+        name: string
+        channelName: string
+        numAttempts: number
+        payload: string
+        priority: number | null
+        channelPriority: number | null
+    },
+    setFail: () => void
+    setRetry: (params? : { lockMs?: number }) => void
 }
 
-export type ProcessorFn = (payload : string, params : ProcessorFnParams) => Promise<void>
+export type ProcessorFn = (params : ProcessorFnParams) => Promise<void>

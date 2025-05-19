@@ -2,8 +2,13 @@ import type { DatabaseClient } from "@src/core/database-client"
 import type { HydraEventHandler } from "@src/queue/daemon/event"
 import type { DaemonProcessorDequeueModule } from "@src/queue/daemon/processor/dequeue"
 import type { ProcessorFn } from "@src/queue/daemon/processor/process-fn"
-import { messageFail } from "@src/binding/message-fail"
-import { messageSuccess } from "@src/binding/message-success"
+import { messageDelete } from "@src/binding/message-delete"
+import { messageRetry } from "@src/binding/message-retry"
+
+type ProcessorResult =
+    | { resultType: "SUCCESS" }
+    | { resultType: "FAIL" }
+    | { resultType: "RETRY", lockMs: number }
 
 export class DaemonProcessorExecutionModule {
 
@@ -38,52 +43,61 @@ export class DaemonProcessorExecutionModule {
                 break
             }
 
-            let processResult : boolean = true
-            let exhaust : boolean = false
+            let processorResult : ProcessorResult = { resultType: "SUCCESS" }
             let error : any = null
-            let result : string | null = null
 
             try {
-                await this.processorFn(dequeueResult.payload, {
-                    messageId: dequeueResult.id,
-                    channelName: dequeueResult.channelName,
-                    dependencies: dequeueResult.dependencies,
-                    setFail: (p) => {
-                        processResult = false
-                        exhaust = p?.exhaust ?? false
+                await this.processorFn({
+                    message : {
+                        id: dequeueResult.id,
+                        payload: dequeueResult.payload,
+                        channelName: dequeueResult.channelName,
+                        numAttempts: dequeueResult.numAttempts,
+                        channelPriority: dequeueResult.channelPriority,
+                        name: dequeueResult.name,
+                        priority: dequeueResult.priority,
                     },
-                    setResults: (p) => {
-                        result = p
+                    setFail: () => {
+                        processorResult = { resultType: "FAIL" }
                     },
+                    setRetry: (p) => {
+                        processorResult = {
+                            resultType: "RETRY",
+                            lockMs: p?.lockMs ?? 0
+                        }
+                    }
                 })
             } catch (err) {
-                processResult = false
+                processorResult = { resultType: "FAIL" }
                 error = err
             }
 
-            if (processResult) {
-                const successResult = await messageSuccess({
+            // Typescript *incorrectly* narrows this type - so re-expand with this cast
+            processorResult = processorResult as ProcessorResult
+
+            if (processorResult.resultType === "SUCCESS") {
+                const successResult = await messageDelete({
                     databaseClient: this.databaseClient,
                     id: dequeueResult.id,
-                    schema: this.schema,
-                    result: result,
+                    schema: this.schema
                 })
 
-                if (successResult.resultType === "MESSAGE_SUCCEEDED") {
+                if (successResult.resultType === "MESSAGE_DELETED") {
                     this.eventHandler({
-                        eventType: "MESSAGE_SUCCEEDED",
-                        eventResult: "MESSAGE_SUCCEEDED",
+                        eventType: "MESSAGE_DELETED",
+                        eventResult: "MESSAGE_DELETED",
+                        isSuccess: true,
                         messageId: dequeueResult.id,
                     })
                 } else if (successResult.resultType === "MESSAGE_NOT_FOUND") {
                     this.eventHandler({
-                        eventType: "MESSAGE_SUCCEEDED",
+                        eventType: "MESSAGE_DELETED",
                         eventResult: "MESSAGE_NOT_FOUND",
                         messageId: dequeueResult.id,
                     })
                 } else if (successResult.resultType === "MESSAGE_STATUS_INVALID") {
                     this.eventHandler({
-                        eventType: "MESSAGE_SUCCEEDED",
+                        eventType: "MESSAGE_DELETED",
                         eventResult: "MESSAGE_STATUS_INVALID",
                         messageId: dequeueResult.id,
                     })
@@ -91,37 +105,68 @@ export class DaemonProcessorExecutionModule {
                     successResult satisfies never
                     throw new Error("Unexpected result")
                 }
-            } else {
-                const failResult = await messageFail({
+            } else if (processorResult.resultType === "RETRY") {
+                const retryResult = await messageRetry({
+                    databaseClient: this.databaseClient,
+                    id: dequeueResult.id,
+                    lockMs: processorResult.lockMs,
+                    schema: this.schema,
+                })
+
+                if (retryResult.resultType === "MESSAGE_LOCKED") {
+                    this.eventHandler({
+                        eventType: "MESSAGE_RETRIED",
+                        eventResult: "MESSAGE_LOCKED",
+                        messageId: dequeueResult.id,
+                    })
+                } else if (retryResult.resultType === "MESSAGE_ACCEPTED") {
+                    this.eventHandler({
+                        eventType: "MESSAGE_RETRIED",
+                        eventResult: "MESSAGE_ACCEPTED",
+                        messageId: dequeueResult.id,
+                    })
+                } else if (retryResult.resultType === "MESSAGE_NOT_FOUND") {
+                    this.eventHandler({
+                        eventType: "MESSAGE_RETRIED",
+                        eventResult: "MESSAGE_NOT_FOUND",
+                        messageId: dequeueResult.id,
+                    })
+                } else if (retryResult.resultType === "MESSAGE_STATUS_INVALID") {
+                    this.eventHandler({
+                        eventType: "MESSAGE_RETRIED",
+                        eventResult: "MESSAGE_STATUS_INVALID",
+                        messageId: dequeueResult.id,
+                    })
+                } else {
+                    retryResult satisfies never
+                    throw new Error("Unexpected result")
+                }
+
+
+            } else if (processorResult.resultType === "FAIL") {
+                const failResult = await messageDelete({
                     databaseClient: this.databaseClient,
                     id: dequeueResult.id,
                     schema: this.schema,
-                    exhaust,
                 })
 
-                if (failResult.resultType === "MESSAGE_LOCKED") {
+                if (failResult.resultType === "MESSAGE_DELETED") {
                     this.eventHandler({
-                        eventType: "MESSAGE_FAILED",
-                        eventResult: "MESSAGE_LOCKED",
+                        eventType: "MESSAGE_DELETED",
+                        eventResult: "MESSAGE_DELETED",
                         messageId: dequeueResult.id,
-                        error: error
-                    })
-                } else if (failResult.resultType === "MESSAGE_EXHAUSTED") {
-                    this.eventHandler({
-                        eventType: "MESSAGE_FAILED",
-                        eventResult: "MESSAGE_EXHAUSTED",
-                        messageId: dequeueResult.id,
+                        isSuccess: false,
                         error: error
                     })
                 } else if (failResult.resultType === "MESSAGE_NOT_FOUND") {
                     this.eventHandler({
-                        eventType: "MESSAGE_FAILED",
+                        eventType: "MESSAGE_DELETED",
                         eventResult: "MESSAGE_NOT_FOUND",
                         messageId: dequeueResult.id,
                     })
                 } else if (failResult.resultType === "MESSAGE_STATUS_INVALID") {
                     this.eventHandler({
-                        eventType: "MESSAGE_FAILED",
+                        eventType: "MESSAGE_DELETED",
                         eventResult: "MESSAGE_STATUS_INVALID",
                         messageId: dequeueResult.id,
                     })
@@ -129,6 +174,9 @@ export class DaemonProcessorExecutionModule {
                     failResult satisfies never
                     throw new Error("Unexpected result")
                 }
+            } else {
+                processorResult satisfies never
+                throw new Error("Unexpected result")
             }
 
         }

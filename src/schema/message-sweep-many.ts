@@ -30,7 +30,7 @@ export const messageSweepManyInstall = (params: {
                     ORDER BY sweep_after ASC
                 LOOP
                     v_message_ids := ARRAY_APPEND(v_message_ids, v_id);
-                    PERFORM ${params.schema}.job_message_lock(v_id);
+                    PERFORM ${params.schema}.job_message_retry(v_id);
                 END LOOP;
 
                 RETURN JSONB_BUILD_OBJECT(

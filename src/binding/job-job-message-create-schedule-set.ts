@@ -17,12 +17,7 @@ export const jobJobMessageCreateScheduleSet = async (params: {
         payload: string
         priority: number | null
         channelPriority: number | null
-        numAttempts: number
         maxProcessingMs: number
-        lockMs: number
-        lockMsFactor: number
-        delayMs: number
-        deleteMs: number
     }
 }) : Promise<JobJobMessageCreateScheduleSetResult> => {
     const parsedCronExpr = parseCronExpr(params.cronExpr)
@@ -38,12 +33,7 @@ export const jobJobMessageCreateScheduleSet = async (params: {
             ${valueNode(params.message.payload)},
             ${valueNode(params.message.priority)},
             ${valueNode(params.message.channelPriority)},
-            ${valueNode(params.message.numAttempts)},
             ${valueNode(params.message.maxProcessingMs)},
-            ${valueNode(params.message.lockMs)},
-            ${valueNode(params.message.lockMsFactor)},
-            ${valueNode(params.message.delayMs)},
-            ${valueNode(params.message.deleteMs)},
             ${arrayNode(parsedCronExpr.expression.mins)},
             ${arrayNode(parsedCronExpr.expression.hours)},
             ${arrayNode(parsedCronExpr.expression.days)},

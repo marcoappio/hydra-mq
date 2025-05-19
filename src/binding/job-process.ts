@@ -1,6 +1,5 @@
-import { messageDependencyUpdateQueryResultParse, type MessageDependencyUpdateQueryResult, type MessageDependencyUpdateResult } from "@src/binding/message-dependency-update"
 import { messageCreateQueryResultParse, type MessageCreateQueryResult, type MessageCreateResult } from "@src/binding/message-create"
-import { messageFailQueryResultParse, type MessageFailQueryResult, type MessageFailResult } from "@src/binding/message-fail"
+import { messageRetryQueryResultParse, type MessageRetryQueryResult, type MessageRetryResult } from "@src/binding/message-retry"
 import { messageReleaseQueryResultParse, type MessageReleaseQueryResult, type MessageReleaseResult } from "@src/binding/message-release"
 import type { MessageSweepManyQueryResult, MessageSweepManyResult } from "@src/binding/message-sweep-many"
 import { messageUnlockQueryResultParse, type MessageUnlockQueryResult, type MessageUnlockResult } from "@src/binding/message-unlock"
@@ -8,7 +7,6 @@ import type { DatabaseClient } from "@src/core/database-client"
 import { refNode, sql } from "@src/core/sql"
 import { JobType } from "@src/schema/enum/job-type"
 import { JobProcessResultCode } from "@src/schema/job-process"
-import { messageDeleteQueryResultParse, type MessageDeleteQueryResult, type MessageDeleteResult } from "@src/binding/message-delete"
 
 type QueryResultQueueEmpty = {
     result_code: JobProcessResultCode.QUEUE_EMPTY
@@ -30,15 +28,6 @@ type QueryResultJobJobMessageCreateScheduleSetProcessed = {
     job_name: string
 }
 
-type QueryResultJobMessageDependencyUpdateProcessed = {
-    result_code: JobProcessResultCode.JOB_PROCESSED,
-    id: string
-    type: JobType.MESSAGE_DEPENDENCY_UPDATE
-    name: string | null
-    message_id: string
-    result: MessageDependencyUpdateQueryResult
-}
-
 type QueryResultJobMessageSweepManyProcessed = {
     result_code: JobProcessResultCode.JOB_PROCESSED,
     id: string
@@ -56,13 +45,13 @@ type QueryResultJobMessageUnlockProcessed = {
     result: MessageUnlockQueryResult
 }
 
-type QueryResultJobMessageFailProcessed = {
+type QueryResultJobMessageRetryProcessed = {
     result_code: JobProcessResultCode.JOB_PROCESSED,
     id: string
-    type: JobType.MESSAGE_FAIL
+    type: JobType.MESSAGE_RETRY
     name: string | null
     message_id: string
-    result: MessageFailQueryResult
+    result: MessageRetryQueryResult
 }
 
 type QueryResultJobMessageCreateProcessed = {
@@ -80,15 +69,6 @@ type QueryResultJobMessageReleaseProcessed = {
     name: string | null
     message_id: string
     result: MessageReleaseQueryResult
-}
-
-type QueryResultJobMessageDeleteProcessed = {
-    result_code: JobProcessResultCode.JOB_PROCESSED,
-    id: string
-    type: JobType.MESSAGE_DELETE
-    name: string | null
-    message_id: string
-    result: MessageDeleteQueryResult
 }
 
 type QueryResultJobChannelPolicyClearProcessed = {
@@ -114,24 +94,13 @@ type QueryResult =
     | QueryResultJobJobMessageCreateScheduleClearProcessed
     | QueryResultJobJobMessageCreateScheduleSetProcessed
     | QueryResultJobMessageCreateProcessed
-    | QueryResultJobMessageDeleteProcessed
-    | QueryResultJobMessageFailProcessed
+    | QueryResultJobMessageRetryProcessed
     | QueryResultJobMessageReleaseProcessed
     | QueryResultJobMessageSweepManyProcessed
-    | QueryResultJobMessageDependencyUpdateProcessed
     | QueryResultJobMessageUnlockProcessed
 
 type ResultQueueEmpty = {
     resultType: "QUEUE_EMPTY"
-}
-
-type ResultJobMessageDependencyUpdateProcessed = {
-    id: string
-    resultType: "JOB_PROCESSED"
-    name: string | null
-    type: JobType.MESSAGE_DEPENDENCY_UPDATE
-    messageId: string
-    result: MessageDependencyUpdateResult
 }
 
 type ResultJobMessageSweepManyProcessed = {
@@ -151,13 +120,13 @@ type ResultJobMessageUnlockProcessed = {
     result: MessageUnlockResult
 }
 
-type ResultJobMessageFailProcessed = {
+type ResultJobMessageRetryProcessed = {
     id: string
     resultType: "JOB_PROCESSED"
     name: string | null
-    type: JobType.MESSAGE_FAIL
+    type: JobType.MESSAGE_RETRY
     messageId: string
-    result: MessageFailResult
+    result: MessageRetryResult
 }
 
 type ResultJobMessageCreateProcessed = {
@@ -175,15 +144,6 @@ type ResultJobMessageReleaseProcessed = {
     type: JobType.MESSAGE_RELEASE
     messageId: string
     result: MessageReleaseResult
-}
-
-type ResultJobMessageDeleteProcessed = {
-    id: string
-    resultType: "JOB_PROCESSED"
-    name: string | null
-    type: JobType.MESSAGE_DELETE
-    messageId: string
-    result: MessageDeleteResult
 }
 
 type ResultJobChannelPolicyClearProcessed = {
@@ -220,13 +180,11 @@ type ResultJobJobScheduleSetMessageCreateProcessed = {
 
 export type JobProcessResult =
     | ResultQueueEmpty
-    | ResultJobMessageDependencyUpdateProcessed
     | ResultJobMessageCreateProcessed
-    | ResultJobMessageFailProcessed
+    | ResultJobMessageRetryProcessed
     | ResultJobMessageReleaseProcessed
     | ResultJobMessageSweepManyProcessed
     | ResultJobMessageUnlockProcessed
-    | ResultJobMessageDeleteProcessed
     | ResultJobChannelPolicyClearProcessed
     | ResultJobChannelPolicySetProcessed
     | ResultJobJobScheduleClearMessageCreateProcessed
@@ -236,16 +194,7 @@ export const jobProcessQueryResultParse = (result: QueryResult): JobProcessResul
     if (result.result_code === JobProcessResultCode.QUEUE_EMPTY) {
         return { resultType: "QUEUE_EMPTY" }
     } else if (result.result_code === JobProcessResultCode.JOB_PROCESSED) {
-        if (result.type === JobType.MESSAGE_DEPENDENCY_UPDATE) {
-            return {
-                id: result.id,
-                resultType: "JOB_PROCESSED",
-                name: result.name,
-                type: result.type,
-                messageId: result.message_id,
-                result: messageDependencyUpdateQueryResultParse(result.result)
-            }
-        } else if (result.type === JobType.MESSAGE_SWEEP_MANY) {
+        if (result.type === JobType.MESSAGE_SWEEP_MANY) {
             return {
                 id: result.id,
                 resultType: "JOB_PROCESSED",
@@ -262,14 +211,14 @@ export const jobProcessQueryResultParse = (result: QueryResult): JobProcessResul
                 messageId: result.message_id,
                 result: messageUnlockQueryResultParse(result.result)
             }
-        } else if (result.type === JobType.MESSAGE_FAIL) {
+        } else if (result.type === JobType.MESSAGE_RETRY) {
             return {
                 id: result.id,
                 resultType: "JOB_PROCESSED",
                 name: result.name,
                 type: result.type,
                 messageId: result.message_id,
-                result: messageFailQueryResultParse(result.result)
+                result: messageRetryQueryResultParse(result.result)
             }
         } else if (result.type === JobType.MESSAGE_CREATE) {
             return {
@@ -287,15 +236,6 @@ export const jobProcessQueryResultParse = (result: QueryResult): JobProcessResul
                 type: result.type,
                 messageId: result.message_id,
                 result: messageReleaseQueryResultParse(result.result)
-            }
-        } else if (result.type === JobType.MESSAGE_DELETE) {
-            return {
-                id: result.id,
-                resultType: "JOB_PROCESSED",
-                name: result.name,
-                type: result.type,
-                messageId: result.message_id,
-                result: messageDeleteQueryResultParse(result.result)
             }
         } else if (result.type === JobType.CHANNEL_POLICY_CLEAR) {
             return {

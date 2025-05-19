@@ -7,7 +7,6 @@ export const channelStateInstall = (params: {
         CREATE TABLE ${params.schema}.channel_state (
             id UUID NOT NULL DEFAULT GEN_RANDOM_UUID(),
             name TEXT NOT NULL,
-            max_size INTEGER,
             max_concurrency INTEGER,
             current_size INTEGER NOT NULL,
             current_concurrency INTEGER NOT NULL,

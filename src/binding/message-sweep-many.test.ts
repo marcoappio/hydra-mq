@@ -25,7 +25,6 @@ const messageParams = {
     priority: null,
     channelPriority: null,
     name: null,
-    numAttempts: 1,
     maxProcessingMs: 60_000,
     lockMs: 0,
     lockMsFactor: 2,
@@ -45,7 +44,7 @@ describe("messageSweepMany", async () => {
 
         const numRows = await pool.query(sql `
             SELECT COUNT(*) AS num_rows FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_FAIL)}
+            WHERE type = ${valueNode(JobType.MESSAGE_RETRY)}
         `).then(res => Number(res.rows[0].num_rows))
         expect(numRows).toBe(0)
     })
@@ -77,7 +76,7 @@ describe("messageSweepMany", async () => {
 
         const numRows = await pool.query(sql `
             SELECT COUNT(*) AS num_rows FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_FAIL)}
+            WHERE type = ${valueNode(JobType.MESSAGE_RETRY)}
         `).then(res => Number(res.rows[0].num_rows))
         expect(numRows).toBe(0)
 
@@ -110,7 +109,7 @@ describe("messageSweepMany", async () => {
 
         const numRows = await pool.query(sql `
             SELECT COUNT(*) AS num_rows FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_FAIL)}
+            WHERE type = ${valueNode(JobType.MESSAGE_RETRY)}
         `).then(res => Number(res.rows[0].num_rows))
         expect(numRows).toBe(1)
     })

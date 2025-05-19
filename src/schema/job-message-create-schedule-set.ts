@@ -12,12 +12,7 @@ export const jobMessageCreateScheduleSetInstall = (params: {
             p_message_payload TEXT,
             p_message_priority INTEGER,
             p_message_channel_priority INTEGER,
-            p_message_num_attempts INTEGER,
             p_message_max_processing_ms INTEGER,
-            p_message_lock_ms INTEGER,
-            p_message_lock_ms_factor REAL,
-            p_message_delay_ms INTEGER,
-            p_message_delete_ms INTEGER,
             p_cron_expr_mins INTEGER[],
             p_cron_expr_hours INTEGER[],
             p_cron_expr_days INTEGER[],
@@ -50,12 +45,7 @@ export const jobMessageCreateScheduleSetInstall = (params: {
                 'payload', p_message_payload,
                 'priority', p_message_priority,
                 'channel_priority', p_message_channel_priority,
-                'num_attempts', p_message_num_attempts,
-                'max_processing_ms', p_message_max_processing_ms,
-                'lock_ms', p_message_lock_ms,
-                'lock_ms_factor', p_message_lock_ms_factor,
-                'delay_ms', p_message_delay_ms,
-                'delete_ms', p_message_delete_ms
+                'max_processing_ms', p_message_max_processing_ms
             );
 
             INSERT INTO ${params.schema}.job (

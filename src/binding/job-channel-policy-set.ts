@@ -3,15 +3,13 @@ import { refNode, sql, valueNode } from "@src/core/sql"
 
 export const jobChannelPolicySet = async (params: {
     databaseClient: DatabaseClient
-    maxConcurrency: number | null
-    maxSize: number | null
+    maxConcurrency: number
     name: string
     schema: string
 }) => {
     await params.databaseClient.query(sql `
         SELECT * FROM ${refNode(params.schema)}.job_channel_policy_set(
             ${valueNode(params.name)},
-            ${valueNode(params.maxSize)},
             ${valueNode(params.maxConcurrency)}
         )
     `)

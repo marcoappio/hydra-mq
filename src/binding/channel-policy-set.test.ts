@@ -23,34 +23,11 @@ const messageParams = {
     priority: null,
     channelPriority: null,
     name: null,
-    numAttempts: 1,
     maxProcessingMs: 60_000,
-    lockMs: 0,
-    lockMsFactor: 2,
-    dependsOn: [],
-    deleteMs: 0,
     delayMs: 0
 }
 
 describe("channelPolicySet", async () => {
-
-    it("correctly sets null policy", async () => {
-        await channelPolicySet({
-            databaseClient: pool,
-            schema: "test",
-            name: "foobar",
-            maxConcurrency: null,
-            maxSize: null,
-        })
-
-        const result = await pool.query(sql `
-            SELECT * FROM test.channel_policy
-        `)
-
-        expect(result.rows.length).toBe(1)
-        expect(result.rows[0].max_concurrency).toBeNull()
-        expect(result.rows[0].max_size).toBeNull()
-    })
 
     it("correctly overwrites policy parameters", async () => {
         await channelPolicySet({
@@ -58,15 +35,13 @@ describe("channelPolicySet", async () => {
             schema: "test",
             name: "foobar",
             maxConcurrency: 1,
-            maxSize: null,
         })
 
         await channelPolicySet({
             databaseClient: pool,
             schema: "test",
             name: "foobar",
-            maxConcurrency: null,
-            maxSize: 10
+            maxConcurrency: 2,
         })
 
         const result = await pool.query(sql `
@@ -74,9 +49,7 @@ describe("channelPolicySet", async () => {
         `)
 
         expect(result.rows.length).toBe(1)
-        expect(result.rows[0].max_concurrency).toBeNull()
-        expect(result.rows[0].max_size).toEqual(10)
-
+        expect(result.rows[0]).toMatchObject({ max_concurrency: 2 })
     })
 
     it("correctly overwrites state parameters", async () => {
@@ -104,8 +77,7 @@ describe("channelPolicySet", async () => {
             databaseClient: pool,
             schema: "test",
             name: "foobar",
-            maxConcurrency: 1,
-            maxSize: 2
+            maxConcurrency: 1
         })
 
         const finalState = await pool.query(sql `
@@ -113,8 +85,7 @@ describe("channelPolicySet", async () => {
         `).then(res => res.rows[0])
 
         expect(finalState).toMatchObject({
-            max_concurrency: 1,
-            max_size: 2,
+            max_concurrency: 1
         })
 
     })

@@ -63,7 +63,7 @@ export class DaemonProcessorDequeueModule {
             } else if (this.eventHandler) {
                 this.eventHandler({
                     eventType: "MESSAGE_DEQUEUED",
-                    messageId: dequeueResult.id
+                    messageId: dequeueResult.id,
                 })
             }
 

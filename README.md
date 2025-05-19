@@ -17,12 +17,10 @@ Join our discord if you have any questions/issues: [Marco Discord](https://disco
   - Scheduled/repeating messages.
   - Inter-tenant *and* intra-tenant message prioritization options.
   - Retryable messages with customizable timeout and back-off strategy.
-  - Storage of message processing result.
   - Delayed messages.
   - Message de-duplication.
-  - Arbitrary message dependency DAGs with intermediate result storage.
   - Message enqueuing within *existing* database transactions.
-  - Deadlock resistance.
+  - Deadlock proof.
   - DB client agnostic.
   - A rich event system.
   - Zero dependencies.
@@ -45,7 +43,7 @@ for (let i = 0; i < 500; i += 1) {
 }
 
 // Create daemons to process messages.
-const processorFn : ProcessorFn = async (msg) => console.log(msg)
+const processorFn : ProcessorFn = async ({ message }) => console.log(message.payload)
 queue.daemon.processor({ databaseClient: pool, processorFn })
 queue.daemon.coordinator({ databaseClient: pool })
 ```
@@ -85,16 +83,14 @@ Channels provide multi-tenancy support within HydraMQ. They can be thought of as
         })
 ```
 
-Channels can be configured to limit their maximum size. Messages will be dropped when size limits are reached. You can also limit their maximum concurrency, ensuring that _at most_ `n` jobs run globally at any one time. This is done by defining a "Channel Policy," which can be set and removed as follows:
+Channels can be configured to limit their maximum concurrency, ensuring that _at most_ `n` jobs run globally at any one time. This is done by defining a "Channel Policy," which can be set and removed as follows:
 
 ```typescript
-    // N.B. null parameters mean 
     await queue
         .channel("my-channel")
         .policy
         .set({
             maxConcurrency: 1,
-            maxSize: null,
             databaseClient: pool,
         })
 
@@ -104,30 +100,33 @@ Channels can be configured to limit their maximum size. Messages will be dropped
         .clear({ databaseClient: pool })
 ```
 
-## Retrying failed messages
+## Success & Failure
 
-Messages can be given a retry policy to ensure that should processing fail, messages are re-attempted at a later date. We provide the `numAttempts`, `lockMs` and `lockMsFactor` arguments when creating a message. `numAttempts` specifies the number of times processing can be attempted on a message. `lockMs` specifies the amount of time a message is "locked" (and unavailable for attempted re-processing) after a failure and `lockMsFactor` specifies the factor by which `lockMs` is multiplied each time a message is locked. 
+Messages are permanently deleted from the database once their processing either succeeds _or_ fails. A message will "fail" if the processor function throws an error _or_ the `setFail` function is explicitly called:
 
 ```typescript
-await queue.message.create({
-    payload: "hello world",
-    databaseClient: pool,
-    numAttempts: 5,
-    lockMs: 5_000,
-    lockMsFactor: 2 // Double the lock time after each failure.
-})
+const processorFn : ProcessorFn = async ({ message, setFail }) => {
+    setFail()
+}
 ```
 
-## Explicit failures
+## Retries
 
-The default behaviour of HydraMQ is to assume every message that processes without an error being thrown was successful. We can override this behaviour by using the second argument within a `ProcessorFn`:
+Messages can be retried by calling the `setRetry` function. An optional `lockMs` can be passed to specify how long you would like the message to be "locked" and unavailable for re-processing. By default this value is `0` - making the message _immediately_ available for re-processing. We can combine the `setRetry` function along with provided message metadata to build completely custom back-off strategies:
 
 ```typescript
-queue.daemon.processor({ 
-    databaseClient: pool, 
-    processorFn: async (payload, params) => {
-        params.setFail({ exhaust: true })
-    })
+const processorFn : ProcessorFn = async ({ message, setFail, setRetry }) => {
+    try {
+        // Biz logic goes here...
+    } catch (err) {
+        if(message.numAttempts >= 5) {
+            setFail()
+        } else {
+            const baseLockMs = 1_000
+            const lockMs = baseLockMs ** message.numAttempts
+            setRetry({ lockMs })
+        }
+    }
 }
 ```
 
@@ -215,65 +214,6 @@ await queue
 
 N.B. Schedule names are scoped to their channel, and thus both the queue-level and channel-level schedules will _not_ collide despite having the same name.
 
-## Adding dependencies to messages
-
-We can enqueue messages that run according to an arbitrary dependency DAG. We do this by providing a `dependsOn` parameter that takes an array of message ids.
-
-```typescript
-const client = await pool.connect()
-try {
-    await client.query("BEGIN")
-
-    const parentMessage = queue.message.create({
-        databaseClient: client,
-        payload: "parent"
-    })
-
-    const childMessage = queue.message.create({
-        databaseClient: client,
-        payload: "child",
-        dependsOn: [parentMessage.id]
-    })
-
-    await client.query("COMMIT")
-} catch {
-    await client.query("ROLLBACK")
-}finally {
-    await client.release()
-}
-```
-
-The child message will now run only after the parent message dependency has resolved. N.B. the child message will _always_ be processed, regardless of the outcome of the parent message processing. However, we can trivially implement custom failure cascade behaviour by inspecting the statuses of the parent messages.
-
-```typescript
-const processor = queue.daemon.processor({ 
-    databaseClient: pool,
-    processorFn: async (payload, { dependencies }) => {
-        if(!params.dependencies.every(x => x.isSuccess)) {
-            // Use exhaust to ignore retry attempts 
-            // and move to the failed state immediately.
-            params.setFail({ exhaust: true }) 
-            return
-        }
-
-        // Remaining biz-logic goes here...
-    }
-})
-```
-
-### Persisting intermediate data
-
-We can "attach" intermediate data during the processing of a particular message such that its consumable by children jobs. We can do this by calling:
-
-```typescript
-const processor = queue.daemon.processor({ 
-    databaseClient: pool,
-    processorFn: async (payload, { dependencies }) => {
-        params.setResult("arbitrary string data")
-    }
-})
-```
-
 ## Processors
 
 Processor daemons dequeue messages from the queue and perform work on them as per the `processorFn`. By default a processor will wait until it finishes processing a message before dequeuing another one. This behaviour can be changed by setting `executionSlots` to a number larger than `1`. Message throughput can be further increased by spawning multiple processors, allowing messages to be concurrently dequeued (which happens efficiently thanks to `SKIP LOCKED`).
@@ -298,7 +238,7 @@ Coordinator and Processor daemons can be gracefully shutdown by awaiting their `
 
 Failure to gracefully shut down daemons (particularly processors) may result in messages being _stuck_ in an invalid `PROCESSING` state. In this state they will occupy a concurrency slot inside their queue - potentially causing blockages and reducing job throughput until the coordinator sweeps them away.
 
-The coordinator will consider messages _stuck_ if they have existed in a `PROCESSING` state for longer than `maxProcessingMs` - which can be defined on a per-message basis when creating. Make sure you set this value such that it is larger than any potential processing time for the given message (by default it is set to 1 hour).
+The coordinator will consider messages _stuck_ if they have existed in a `PROCESSING` state for longer than `maxProcessingMs` - which can be defined on a per-message basis upon creation. Make sure you set this value such that it is larger than any potential processing time for the given message (by default it is set to 1 hour). The coordinator will perform a sweep every minute to find said messages. Once "un-stuck" by the coordinator, these messages will become available for re-processing.
 
 ## Other Database Clients
 

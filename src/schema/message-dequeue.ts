@@ -75,8 +75,6 @@ export const messageDequeueInstall = (params: {
                 v_now TIMESTAMP;
                 v_channel_state RECORD;
                 v_message RECORD;
-                v_dependency_data RECORD;
-                v_dependencies JSONB;
                 v_next_message RECORD;
             BEGIN
                 v_now := NOW();
@@ -95,25 +93,16 @@ export const messageDequeueInstall = (params: {
                     is_processed = ${valueNode(true)},
                     status = ${valueNode(MessageStatus.PROCESSING)},
                     sweep_after = v_now + (max_processing_ms * INTERVAL '1 MILLISECOND'),
-                    num_attempts = num_attempts - 1
+                    num_attempts = num_attempts + 1
                 WHERE id = v_channel_state.next_message_id
                 RETURNING 
                     id, 
-                    payload, 
-                    num_attempts
+                    name,
+                    payload,
+                    num_attempts,
+                    priority,
+                    channel_priority
                 INTO v_message;
-
-                SELECT
-                    ARRAY_AGG(
-                        JSONB_BUILD_OBJECT(
-                            'id', parent_message_id,
-                            'status', status,
-                            'result', result
-                        )
-                    ) AS data
-                FROM ${params.schema}.message_parent
-                WHERE message_id = v_message.id
-                INTO v_dependency_data;
 
                 UPDATE ${params.schema}.channel_state SET
                     current_concurrency = v_channel_state.current_concurrency + 1
@@ -140,8 +129,11 @@ export const messageDequeueInstall = (params: {
                     'result_code', ${valueNode(MessageDequeueResultCode.MESSAGE_DEQUEUED)},
                     'id', v_message.id,
                     'channel_name', v_channel_state.name,
-                    'payload', v_message.payload,
-                    'dependencies', COALESCE(v_dependency_data.data, ARRAY[]::JSONB[])
+                    'num_attempts', v_message.num_attempts,
+                    'priority', v_message.priority,
+                    'name', v_message.name,
+                    'channel_priority', v_message.channel_priority,
+                    'payload', v_message.payload
                 );
             END;
             $$ LANGUAGE plpgsql;

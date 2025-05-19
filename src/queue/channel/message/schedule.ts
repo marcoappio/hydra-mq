@@ -1,8 +1,8 @@
-import { MESSAGE_DEFAULT_NUM_ATTEMPTS, MESSAGE_DEFAULT_PRIORITY, MESSAGE_DEFAULT_PROCESSING_MS, MESSAGE_DEFAULT_LOCK_MS, MESSAGE_DEFAULT_NAME, MESSAGE_DEFAULT_DELAY_MS, MESSAGE_DEFAULT_LOCK_MS_FACTOR, MESSAGE_DEFAULT_DELETE_MS } from "@src/core/config"
 import type { DatabaseClient } from "@src/core/database-client"
 import { jobJobMessageCreateScheduleClear } from "@src/binding/job-job-message-create-schedule-clear"
 import { jobJobMessageCreateScheduleSet } from "@src/binding/job-job-message-create-schedule-set"
 import { createHash } from "crypto"
+import { MESSAGE_DEFAULT_NAME, MESSAGE_DEFAULT_PRIORITY, MESSAGE_DEFAULT_PROCESSING_MS } from "@src/core/config"
 
 export const getUniqueJobName = (params: {
     channel: string | null
@@ -49,11 +49,7 @@ export class MessageScheduleModule {
         payload: string
         priority?: number
         channelPriority?: number
-        lockMs?: number
         maxProcessingMs?: number
-        lockMsFactor?: number
-        delayMs?: number
-        deleteMs?: number
     }) {
         return jobJobMessageCreateScheduleSet({
             cronExpr: params.cronExpr,
@@ -66,12 +62,7 @@ export class MessageScheduleModule {
                 payload: params.payload,
                 priority: params.priority ?? MESSAGE_DEFAULT_PRIORITY,
                 channelPriority: params.channelPriority ?? MESSAGE_DEFAULT_PRIORITY,
-                numAttempts: params.numAttempts ?? MESSAGE_DEFAULT_NUM_ATTEMPTS,
-                maxProcessingMs: params.maxProcessingMs ?? MESSAGE_DEFAULT_PROCESSING_MS,
-                lockMs: params.lockMs ?? MESSAGE_DEFAULT_LOCK_MS,
-                lockMsFactor: params.lockMsFactor ?? MESSAGE_DEFAULT_LOCK_MS_FACTOR,
-                delayMs: params.delayMs ?? MESSAGE_DEFAULT_DELAY_MS,
-                deleteMs: params.deleteMs ?? MESSAGE_DEFAULT_DELETE_MS,
+                maxProcessingMs: params.maxProcessingMs ?? MESSAGE_DEFAULT_PROCESSING_MS
             }
         })
     }

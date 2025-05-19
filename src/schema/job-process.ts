@@ -97,12 +97,7 @@ export const jobProcessInstall = (params : {
                         v_job.params->>'message_payload',
                         (v_job.params->>'message_priority')::INTEGER,
                         (v_job.params->>'message_channel_priority')::INTEGER,
-                        (v_job.params->>'message_num_attempts')::INTEGER,
                         (v_job.params->>'message_max_processing_ms')::INTEGER,
-                        (v_job.params->>'message_lock_ms')::INTEGER,
-                        (v_job.params->>'message_lock_ms_factor')::REAL,
-                        (v_job.params->>'message_delay_ms')::INTEGER,
-                        (v_job.params->>'message_delete_ms')::INTEGER,
                         (SELECT ARRAY(SELECT JSONB_ARRAY_ELEMENTS_TEXT(v_job.params->'cron_expr_mins'))::INTEGER[]),
                         (SELECT ARRAY(SELECT JSONB_ARRAY_ELEMENTS_TEXT(v_job.params->'cron_expr_hours'))::INTEGER[]),
                         (SELECT ARRAY(SELECT JSONB_ARRAY_ELEMENTS_TEXT(v_job.params->'cron_expr_days'))::INTEGER[]),
@@ -160,16 +155,6 @@ export const jobProcessInstall = (params : {
                         'name', v_job.name,
                         'result', ${params.schema}.message_sweep_many()
                     );
-                ELSIF v_job.type = ${valueNode(JobType.MESSAGE_DELETE)} THEN
-                    v_message_id := (v_job.params->>'id')::UUID;
-                    RETURN JSONB_BUILD_OBJECT(
-                        'result_code', ${valueNode(JobProcessResultCode.JOB_PROCESSED)},
-                        'id', v_job.id,
-                        'type', v_job.type,
-                        'name', v_job.name,
-                        'message_id', v_message_id,
-                        'result', ${params.schema}.message_delete(v_message_id)
-                    );
                 ELSIF v_job.type = ${valueNode(JobType.MESSAGE_RELEASE)} THEN
                     v_message_id := (v_job.params->>'id')::UUID;
                     RETURN JSONB_BUILD_OBJECT(
@@ -190,7 +175,7 @@ export const jobProcessInstall = (params : {
                         'message_id', v_message_id,
                         'result', ${params.schema}.message_unlock(v_message_id)
                     );
-                ELSIF v_job.type = ${valueNode(JobType.MESSAGE_FAIL)} THEN
+                ELSIF v_job.type = ${valueNode(JobType.MESSAGE_RETRY)} THEN
                     v_message_id := (v_job.params->>'id')::UUID;
                     RETURN JSONB_BUILD_OBJECT(
                         'result_code', ${valueNode(JobProcessResultCode.JOB_PROCESSED)},
@@ -198,17 +183,7 @@ export const jobProcessInstall = (params : {
                         'type', v_job.type,
                         'name', v_job.name,
                         'message_id', v_message_id,
-                        'result', ${params.schema}.message_fail(v_message_id, FALSE)
-                    );
-                ELSIF v_job.type = ${valueNode(JobType.MESSAGE_DEPENDENCY_UPDATE)} THEN
-                    v_message_id := (v_job.params->>'id')::UUID;
-                    RETURN JSONB_BUILD_OBJECT(
-                        'result_code', ${valueNode(JobProcessResultCode.JOB_PROCESSED)},
-                        'id', v_job.id,
-                        'type', v_job.type,
-                        'name', v_job.name,
-                        'message_id', v_message_id,
-                        'result', ${params.schema}.message_dependency_update(v_message_id)
+                        'result', ${params.schema}.message_retry(v_message_id, 0)
                     );
                 ELSIF v_job.type = ${valueNode(JobType.MESSAGE_CREATE)} THEN
                     RETURN JSONB_BUILD_OBJECT(
@@ -222,13 +197,8 @@ export const jobProcessInstall = (params : {
                             v_job.params->>'payload',
                             (v_job.params->>'priority')::INTEGER,
                             (v_job.params->>'channel_priority')::INTEGER,
-                            (v_job.params->>'num_attempts')::INTEGER,
                             (v_job.params->>'max_processing_ms')::INTEGER,
-                            (v_job.params->>'lock_ms')::INTEGER,
-                            (v_job.params->>'lock_ms_factor')::REAL,
-                            (v_job.params->>'delay_ms')::INTEGER,
-                            (v_job.params->>'delete_ms')::INTEGER,
-                            ARRAY[]::UUID[]
+                            0
                         )
                     );
                 ELSE

@@ -1,13 +1,9 @@
 import { Queue } from "@src/queue"
 import { beforeEach, describe, expect, it } from "bun:test"
-import { randomUUID } from "crypto"
 import { Pool } from "pg"
 import { messageCreate } from "@src/binding/message-create"
 import { messageDequeue, type MessageDequeueResultMessageDequeued } from "@src/binding/message-dequeue"
 import { messageRelease } from "@src/binding/message-release"
-import { messageSuccess } from "@src/binding/message-success"
-import { messageFail } from "@src/binding/message-fail"
-import { messageDependencyUpdate } from "@src/binding/message-dependency-update"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
@@ -26,13 +22,8 @@ const messageParams = {
     priority: null,
     channelPriority: null,
     name: null,
-    numAttempts: 1,
     maxProcessingMs: 60_000,
-    lockMs: 0,
-    lockMsFactor: 2,
-    delayMs: 0,
-    deleteMs: 0,
-    dependsOn: []
+    delayMs: 0
 }
 
 describe("messageDequeue", async () => {
@@ -43,109 +34,6 @@ describe("messageDequeue", async () => {
             schema: "test",
         })
         expect(result.resultType).toBe("QUEUE_EMPTY")
-    })
-
-    it("correctly returns dependencies", async () => {
-        const completeCreateResult = await messageCreate({
-            databaseClient: pool,
-            schema: "test",
-            ...messageParams,
-        })
-
-        const exhaustedCreateResult = await messageCreate({
-            databaseClient: pool,
-            schema: "test",
-            ...messageParams,
-        })
-
-        const missingId = randomUUID()
-        const childCreateResult = await messageCreate({
-            databaseClient: pool,
-            schema: "test",
-            ...messageParams,
-            dependsOn: [completeCreateResult.id, exhaustedCreateResult.id, missingId]
-        })
-
-        await messageRelease({
-            databaseClient: pool,
-            schema: "test",
-            id: completeCreateResult.id,
-        })
-
-        await messageDequeue({
-            databaseClient: pool,
-            schema: "test",
-        })
-
-        await messageSuccess({
-            databaseClient: pool,
-            schema: "test",
-            id: completeCreateResult.id,
-            result: "lol",
-        })
-
-        await messageDependencyUpdate({
-            databaseClient: pool,
-            schema: "test",
-            id: childCreateResult.id,
-        })
-
-        await messageRelease({
-            databaseClient: pool,
-            schema: "test",
-            id: exhaustedCreateResult.id,
-        })
-
-        await messageDequeue({
-            databaseClient: pool,
-            schema: "test",
-        })
-
-        await messageFail({
-            databaseClient: pool,
-            schema: "test",
-            id: exhaustedCreateResult.id,
-            exhaust: true,
-        })
-
-        await messageDependencyUpdate({
-            databaseClient: pool,
-            schema: "test",
-            id: childCreateResult.id,
-        })
-
-        await messageRelease({
-            databaseClient: pool,
-            schema: "test",
-            id: childCreateResult.id,
-        })
-
-        const dequeueResult = await messageDequeue({
-            databaseClient: pool,
-            schema: "test",
-        }) as MessageDequeueResultMessageDequeued
-        expect(dequeueResult.resultType).toBe("MESSAGE_DEQUEUED")
-        expect(dequeueResult).toMatchObject({
-            resultType: "MESSAGE_DEQUEUED",
-            dependencies: expect.arrayContaining([
-                expect.objectContaining({
-                    id: completeCreateResult.id,
-                    isSuccess: true,
-                    dependencyType: "COMPLETED",
-                    data: "lol"
-                }),
-                expect.objectContaining({
-                    id: exhaustedCreateResult.id,
-                    isSuccess: false,
-                    dependencyType: "EXHAUSTED"
-                }),
-                expect.objectContaining({
-                    id: missingId,
-                    isSuccess: false,
-                    dependencyType: "MISSING"
-                })
-            ])
-        })
     })
 
     it("correctly dequeues messages in the correct order", async () => {

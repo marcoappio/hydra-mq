@@ -5,9 +5,9 @@ import { messageRelease } from "@src/binding/message-release"
 import { messageCreate } from "@src/binding/message-create"
 import { sql, valueNode } from "@src/core/sql"
 import { messageUnlock } from "@src/binding/message-unlock"
-import { messageFail } from "@src/binding/message-fail"
 import { messageDequeue } from "@src/binding/message-dequeue"
 import { randomUUID } from "crypto"
+import { messageRetry } from "@src/binding/message-retry"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
@@ -26,13 +26,8 @@ const messageParams = {
     priority: null,
     channelPriority: null,
     name: null,
-    numAttempts: 10,
     maxProcessingMs: 60_000,
-    lockMs: 0,
-    lockMsFactor: 2,
-    delayMs: 0,
-    deleteMs: 0,
-    dependsOn: []
+    delayMs: 0
 }
 
 describe("messageUnlock", async () => {
@@ -78,11 +73,11 @@ describe("messageUnlock", async () => {
             schema: "test",
         })
 
-        await messageFail({
+        await messageRetry({
             databaseClient: pool,
             schema: "test",
             id: createResult.id,
-            exhaust: false
+            lockMs: 1
         })
 
         const unlockResult = await messageUnlock({
@@ -129,11 +124,11 @@ describe("messageUnlock", async () => {
             id: secondCreateResult.id,
         })
 
-        await messageFail({
+        await messageRetry({
             databaseClient: pool,
             schema: "test",
             id: createResult.id,
-            exhaust: false
+            lockMs: 1
         })
 
         const unlockResult = await messageUnlock({
