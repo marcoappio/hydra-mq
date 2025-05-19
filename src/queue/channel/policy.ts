@@ -18,8 +18,7 @@ export class ChannelPolicyModule {
 
     async set(params: {
         databaseClient: DatabaseClient
-        maxConcurrency: number | null
-        maxSize: number | null
+        maxConcurrency: number
         unsafe? : {
             forceImmediate?: boolean
         }
@@ -28,7 +27,6 @@ export class ChannelPolicyModule {
             return channelPolicySet({
                 databaseClient: params.databaseClient,
                 maxConcurrency: params.maxConcurrency,
-                maxSize: params.maxSize,
                 name: this.channel,
                 schema: this.schema,
             })
@@ -37,7 +35,6 @@ export class ChannelPolicyModule {
         return jobChannelPolicySet({
             databaseClient: params.databaseClient,
             maxConcurrency: params.maxConcurrency,
-            maxSize: params.maxSize,
             name: this.channel,
             schema: this.schema,
         })

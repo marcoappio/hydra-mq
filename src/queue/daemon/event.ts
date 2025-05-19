@@ -22,12 +22,6 @@ export type HydraEventMessageReleasedMessageDependenciesOutstanding = {
     messageId: string
 }
 
-export type HydraEventMessageReleasedMessageDropped = {
-    eventType: "MESSAGE_RELEASED"
-    eventResult: "MESSAGE_DROPPED"
-    messageId: string
-}
-
 export type HydraEventMessageReleasedMessageDeduplicated = {
     eventType: "MESSAGE_RELEASED"
     eventResult: "MESSAGE_DEDUPLICATED"
@@ -52,65 +46,54 @@ export type HydraEventMessageUnlockedMessageAccepted = {
     messageId: string
 }
 
-export type HydraEventMessageFailedMessageStatusInvalid = {
-    eventType: "MESSAGE_FAILED"
+export type HydraEventMessageDeletedMessageStatusInvalid = {
+    eventType: "MESSAGE_DELETED"
     eventResult: "MESSAGE_STATUS_INVALID"
     messageId: string
 }
 
-export type HydraEventMessageFailedMessageNotFound = {
-    eventType: "MESSAGE_FAILED"
+export type HydraEventMessageDeletedMessageNotFound = {
+    eventType: "MESSAGE_DELETED"
     eventResult: "MESSAGE_NOT_FOUND"
     messageId: string
 }
 
-export type HydraEventMessageFailedMessageLocked = {
-    eventType: "MESSAGE_FAILED"
+export type HydraEventMessageDeletedMessageDeletedSuccess = {
+    eventType: "MESSAGE_DELETED"
+    eventResult: "MESSAGE_DELETED"
+    messageId: string
+    isSuccess: true
+}
+
+export type HydraEventMessageDeletedMessageDeletedFailure = {
+    eventType: "MESSAGE_DELETED"
+    eventResult: "MESSAGE_DELETED"
+    messageId: string
+    isSuccess: false
+    error: any
+}
+
+export type HydraEventMessageRetryredMessageNotFound = {
+    eventType: "MESSAGE_RETRIED"
+    eventResult: "MESSAGE_NOT_FOUND"
+    messageId: string
+}
+
+export type HydraEventMessageRetryredMessageStatusInvalid = {
+    eventType: "MESSAGE_RETRIED"
+    eventResult: "MESSAGE_STATUS_INVALID"
+    messageId: string
+}
+
+export type HydraEventMessageRetryredMessageLocked = {
+    eventType: "MESSAGE_RETRIED"
     eventResult: "MESSAGE_LOCKED"
     messageId: string
-    error?: any
 }
 
-export type HydraEventMessageFailedMessageExhausted = {
-    eventType: "MESSAGE_FAILED"
-    eventResult: "MESSAGE_EXHAUSTED"
-    messageId: string
-    error?: any
-}
-
-export type HydraEventMessageDependencyUpdatedMessageDependencyUpdated = {
-    eventType: "MESSAGE_DEPENDENCY_UPDATED"
-    eventResult: "MESSAGE_DEPENDENCY_UPDATED"
-    messageId: string
-}
-
-export type HydraEventMessageDependencyUpdatedMessageNotFound = {
-    eventType: "MESSAGE_DEPENDENCY_UPDATED"
-    eventResult: "MESSAGE_NOT_FOUND"
-    messageId: string
-}
-
-export type HydraEventMessageDependencyUpdatedMessageStatusInvalid = {
-    eventType: "MESSAGE_DEPENDENCY_UPDATED"
-    eventResult: "MESSAGE_STATUS_INVALID"
-    messageId: string
-}
-
-export type HydraEventMessageSucceededMessageSucceeded = {
-    eventType: "MESSAGE_SUCCEEDED"
-    eventResult: "MESSAGE_SUCCEEDED"
-    messageId: string
-}
-
-export type HydraEventMessageSucceededMessageNotFound = {
-    eventType: "MESSAGE_SUCCEEDED"
-    eventResult: "MESSAGE_NOT_FOUND"
-    messageId: string
-}
-
-export type HydraEventMessageSucceededMessageStatusInvalid = {
-    eventType: "MESSAGE_SUCCEEDED"
-    eventResult: "MESSAGE_STATUS_INVALID"
+export type HydraEventMessageRetryredMessageAccepted = {
+    eventType: "MESSAGE_RETRIED"
+    eventResult: "MESSAGE_ACCEPTED"
     messageId: string
 }
 
@@ -126,24 +109,6 @@ export type HydraEventMessageCreated = {
 
 export type HydraEventMessageDequeued = {
     eventType: "MESSAGE_DEQUEUED"
-    messageId: string
-}
-
-export type HydraEventMessageDeletedMessageNotFound = {
-    eventType: "MESSAGE_DELETED"
-    eventResult: "MESSAGE_NOT_FOUND"
-    messageId: string
-}
-
-export type HydraEventMessageDeletedMessageDeleted = {
-    eventType: "MESSAGE_DELETED"
-    eventResult: "MESSAGE_DELETED"
-    messageId: string
-}
-
-export type HydraEventMessageDeletedMessageStatusInvalid = {
-    eventType: "MESSAGE_DELETED"
-    eventResult: "MESSAGE_STATUS_INVALID"
     messageId: string
 }
 
@@ -173,27 +138,20 @@ export type HydraEvent =
     | HydraEventJobMessageCreateScheduleCleared
     | HydraEventJobMessageCreateScheduleSet
     | HydraEventMessageCreated
-    | HydraEventMessageDeletedMessageDeleted
+    | HydraEventMessageDequeued
+    | HydraEventMessageDeletedMessageDeletedSuccess
+    | HydraEventMessageDeletedMessageDeletedFailure
     | HydraEventMessageDeletedMessageNotFound
     | HydraEventMessageDeletedMessageStatusInvalid
-    | HydraEventMessageDependencyUpdatedMessageDependencyUpdated
-    | HydraEventMessageDependencyUpdatedMessageNotFound
-    | HydraEventMessageDependencyUpdatedMessageStatusInvalid
-    | HydraEventMessageDequeued
-    | HydraEventMessageFailedMessageExhausted
-    | HydraEventMessageFailedMessageLocked
-    | HydraEventMessageFailedMessageLocked
-    | HydraEventMessageFailedMessageNotFound
-    | HydraEventMessageFailedMessageStatusInvalid
+    | HydraEventMessageRetryredMessageAccepted
+    | HydraEventMessageRetryredMessageLocked
+    | HydraEventMessageRetryredMessageNotFound
+    | HydraEventMessageRetryredMessageStatusInvalid
     | HydraEventMessageReleasedMessageAccepted
     | HydraEventMessageReleasedMessageDeduplicated
     | HydraEventMessageReleasedMessageDependenciesOutstanding
-    | HydraEventMessageReleasedMessageDropped
     | HydraEventMessageReleasedMessageNotFound
     | HydraEventMessageReleasedMessageStatusInvalid
-    | HydraEventMessageSucceededMessageNotFound
-    | HydraEventMessageSucceededMessageStatusInvalid
-    | HydraEventMessageSucceededMessageSucceeded
     | HydraEventMessageSweptMany
     | HydraEventMessageUnlockedMessageAccepted
     | HydraEventMessageUnlockedMessageNotFound

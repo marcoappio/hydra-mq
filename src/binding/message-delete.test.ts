@@ -4,10 +4,9 @@ import { Pool } from "pg"
 import { sql, valueNode } from "@src/core/sql"
 import { messageCreate } from "@src/binding/message-create"
 import { messageRelease } from "@src/binding/message-release"
-import { messageDequeue }  from "@src/binding/message-dequeue"
-import { randomUUID } from "crypto"
+import { messageDequeue } from "@src/binding/message-dequeue"
 import { messageDelete } from "@src/binding/message-delete"
-import { messageSuccess } from "@src/binding/message-success"
+import { randomUUID } from "crypto"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const queue = new Queue({ schema: "test" })
@@ -26,30 +25,25 @@ const testMessageParams = {
     priority: null,
     channelPriority: null,
     name: null,
-    numAttempts: 1,
     maxProcessingMs: 60_000,
-    lockMs: 0,
-    lockMsFactor: 2,
-    delayMs: 0,
-    deleteMs: 0,
-    dependsOn: [],
+    delayMs: 0
 }
 
 describe("messageDelete", async () => {
-    it("reports when message not found", async () => {
-        const failResult = await messageDelete({
+    it("reports on message not found", async () => {
+        const deleteResult = await messageDelete({
             databaseClient: pool,
             schema: "test",
             id: randomUUID()
         })
-        expect(failResult.resultType).toBe("MESSAGE_NOT_FOUND")
+        expect(deleteResult.resultType).toBe("MESSAGE_NOT_FOUND")
     })
 
-    it("reports message with invalid status", async () => {
+    it("reports on message with an invalid status", async () => {
         const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
-            ...testMessageParams
+            ...testMessageParams,
         })
 
         const deleteResult = await messageDelete({
@@ -60,18 +54,29 @@ describe("messageDelete", async () => {
         expect(deleteResult.resultType).toBe("MESSAGE_STATUS_INVALID")
     })
 
-    it("correctly deletes a message", async () => {
-        const createResult = await messageCreate({
+    it("correctly deletes messages", async () => {
+        const firstCreateResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ...testMessageParams,
-            dependsOn: [randomUUID()]
+        })
+
+        const secondCreateResult = await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ...testMessageParams,
         })
 
         await messageRelease({
             databaseClient: pool,
             schema: "test",
-            id: createResult.id,
+            id: firstCreateResult.id,
+        })
+
+        await messageRelease({
+            databaseClient: pool,
+            schema: "test",
+            id: secondCreateResult.id,
         })
 
         await messageDequeue({
@@ -79,37 +84,53 @@ describe("messageDelete", async () => {
             schema: "test",
         })
 
-        await messageSuccess({
+        const firstDeleteResult = await messageDelete({
             databaseClient: pool,
             schema: "test",
-            id: createResult.id,
-            result: null,
+            id: firstCreateResult.id,
         })
 
-        const deleteResult = await messageDelete({
-            databaseClient: pool,
-            schema: "test",
-            id: createResult.id,
-        })
-        expect(deleteResult.resultType).toBe("MESSAGE_DELETED")
+        expect(firstDeleteResult.resultType).toBe("MESSAGE_DELETED")
 
-        const message = await pool.query(sql`
-            SELECT * FROM test.message WHERE id = ${valueNode(createResult.id)}
-        `).then(res => res.rows[0])
-        expect(message).toBeUndefined()
-
-        const channelState = await pool.query(sql`
+        const firstChannelState = await pool.query(sql `
             SELECT * FROM test.channel_state
         `).then(res => res.rows[0])
-        expect(channelState).toBeUndefined()
+        expect(firstChannelState).toMatchObject({
+            name: testMessageParams.channelName,
+            current_size: 1,
+            current_concurrency: 0,
+        })
 
-        const messageParent = await pool.query(sql`
-            SELECT * FROM test.message_parent WHERE message_id = ${valueNode(createResult.id)}
+        const firstMessage = await pool.query(sql `
+            SELECT * FROM test.message
+            WHERE id = ${valueNode(firstCreateResult.id)}
         `).then(res => res.rows[0])
-        expect(messageParent).toBeUndefined()
+        expect(firstMessage).toBeUndefined()
+
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
+
+        const secondDeleteResult = await messageDelete({
+            databaseClient: pool,
+            schema: "test",
+            id: secondCreateResult.id,
+        })
+
+        expect(secondDeleteResult.resultType).toBe("MESSAGE_DELETED")
+
+        const secondChannelState = await pool.query(sql `
+            SELECT * FROM test.channel_state
+        `).then(res => res.rows[0])
+        expect(secondChannelState).toBeUndefined()
+
+        const secondMessage = await pool.query(sql `
+            SELECT * FROM test.message
+            WHERE id = ${valueNode(secondCreateResult.id)}
+        `).then(res => res.rows[0])
+        expect(secondMessage).toBeUndefined()
     })
-
 })
-
 
 

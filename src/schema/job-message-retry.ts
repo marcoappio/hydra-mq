@@ -1,12 +1,12 @@
 import { sql, valueNode, type SqlRefNode } from "@src/core/sql"
 import { JobType } from "@src/schema/enum/job-type"
 
-export const jobMessageLockInstall = (params: {
+export const jobMessageRetryInstall = (params: {
     schema: SqlRefNode
 }) => {
     return [
         sql `
-            CREATE FUNCTION ${params.schema}.job_message_lock(
+            CREATE FUNCTION ${params.schema}.job_message_retry(
                 p_id UUID
             ) RETURNS VOID AS $$
             DECLARE
@@ -21,7 +21,7 @@ export const jobMessageLockInstall = (params: {
                     is_recurring,
                     process_after
                 ) VALUES (
-                    ${valueNode(JobType.MESSAGE_FAIL)},
+                    ${valueNode(JobType.MESSAGE_RETRY)},
                     v_params,
                     ${valueNode(false)},
                     v_now

@@ -16,105 +16,47 @@ export const messageCreateInstall = (params: {
                 p_payload TEXT,
                 p_priority INTEGER,
                 p_channel_priority INTEGER,
-                p_num_attempts INTEGER,
                 p_max_processing_ms INTEGER,
-                p_lock_ms INTEGER,
-                p_lock_ms_factor REAL,
-                p_delay_ms INTEGER,
-                p_delete_ms INTEGER,
-                p_depends_on UUID[]
+                p_delay_ms INTEGER
             )
             RETURNS JSONB AS $$
             DECLARE
                 v_now TIMESTAMP;
-                v_message_id UUID;
+                v_message RECORD;
                 v_channel_name TEXT;
-                v_parent_id UUID;
-                v_parent RECORD;
-                v_num_dependencies INTEGER;
             BEGIN
                 v_now := NOW();
-                v_message_id := GEN_RANDOM_UUID();
                 v_channel_name := COALESCE(p_channel_name, GEN_RANDOM_UUID()::TEXT);
-                v_num_dependencies := 0;
-
-                FOREACH v_parent_id IN ARRAY p_depends_on LOOP
-                    v_parent := NULL;
-
-                    SELECT id, status, result
-                    FROM ${params.schema}.message
-                    WHERE id = v_parent_id
-                    FOR SHARE
-                    INTO v_parent;
-
-                    IF v_parent.status NOT IN (
-                        ${valueNode(MessageStatus.COMPLETED)},
-                        ${valueNode(MessageStatus.EXHAUSTED)},
-                        ${valueNode(MessageStatus.DEDUPLICATED)},
-                        ${valueNode(MessageStatus.DROPPED)}
-                    ) THEN
-                        v_num_dependencies := v_num_dependencies + 1;
-                    END IF;
-
-                    INSERT INTO ${params.schema}.message_parent (
-                        message_id,
-                        parent_message_id,
-                        status,
-                        result
-                    ) VALUES (
-                        v_message_id,
-                        v_parent_id,
-                        v_parent.status,
-                        v_parent.result
-                    );
-                END LOOP;
 
                 INSERT INTO ${params.schema}.message (
-                    id,
                     name,
                     channel_name,
                     payload,
                     priority,
                     channel_priority,
-                    num_attempts,
                     max_processing_ms,
-                    delay_ms,
-                    lock_ms,
-                    lock_ms_factor,
-                    delete_ms,
                     status,
-                    is_processed,
-                    num_dependencies,
-                    created_at
+                    is_processed
                 ) VALUES (
-                    v_message_id,
                     p_name,
                     v_channel_name,
                     p_payload,
                     p_priority,
                     p_channel_priority,
-                    p_num_attempts,
                     p_max_processing_ms,
-                    p_delay_ms,
-                    p_lock_ms,
-                    p_lock_ms_factor,
-                    p_delete_ms,
                     ${valueNode(MessageStatus.CREATED)},
-                    ${valueNode(false)},
-                    v_num_dependencies,
-                    v_now
-                );
+                    ${valueNode(false)}
+                ) RETURNING id
+                INTO v_message;
 
-                IF v_num_dependencies = 0 THEN
-                    PERFORM ${params.schema}.job_message_release(
-                        v_message_id,
-                        v_now + p_delay_ms * INTERVAL '1 MILLISECOND'
-                    );
-                END IF;
+                PERFORM ${params.schema}.job_message_release(
+                    v_message.id,
+                    v_now + p_delay_ms * INTERVAL '1 MILLISECOND'
+                );
 
                 RETURN JSONB_BUILD_OBJECT(
                     'result_code', ${valueNode(MessageCreateResultCode.MESSAGE_CREATED)}, 
-                    'id', v_message_id
+                    'id', v_message.id
                 );
             END;
             $$ LANGUAGE plpgsql;

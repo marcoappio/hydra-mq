@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "bun:test"
 import { Pool } from "pg"
 import { sql, valueNode } from "@src/core/sql"
 import { messageCreate } from "@src/binding/message-create"
-import { messageFail } from "@src/binding/message-fail"
+import { messageRetry } from "@src/binding/message-retry"
 import { messageRelease } from "@src/binding/message-release"
 import { messageDequeue }  from "@src/binding/message-dequeue"
 import { MessageStatus } from "@src/schema/enum/message-status"
@@ -27,24 +27,19 @@ const testMessageParams = {
     priority: null,
     channelPriority: null,
     name: null,
-    numAttempts: 1,
     maxProcessingMs: 60_000,
-    lockMs: 0,
-    lockMsFactor: 2,
-    delayMs: 0,
-    deleteMs: 0,
-    dependsOn: [],
+    delayMs: 0
 }
 
-describe("messageFail", async () => {
+describe("messageRetry", async () => {
     it("reports when message not found", async () => {
-        const failResult = await messageFail({
+        const retryResult = await messageRetry({
             databaseClient: pool,
             schema: "test",
-            id: randomUUID(),
-            exhaust: false
+            lockMs: 0,
+            id: randomUUID()
         })
-        expect(failResult.resultType).toBe("MESSAGE_NOT_FOUND")
+        expect(retryResult.resultType).toBe("MESSAGE_NOT_FOUND")
     })
 
     it("reports message with invalid status", async () => {
@@ -54,21 +49,21 @@ describe("messageFail", async () => {
             ...testMessageParams
         })
 
-        const failResult = await messageFail({
+        const retryResult = await messageRetry({
             databaseClient: pool,
             schema: "test",
-            id: createResult.id,
-            exhaust: false
+            lockMs: 0,
+            id: createResult.id
         })
-        expect(failResult.resultType).toBe("MESSAGE_STATUS_INVALID")
+        expect(retryResult.resultType).toBe("MESSAGE_STATUS_INVALID")
     })
 
-    it("correctly locks messages when attempts are remaining", async () => {
+    it("continually increments numAttempts", async () => {
         const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ...testMessageParams,
-            numAttempts: 2,
+            priority: 1337
         })
 
         await messageRelease({
@@ -82,13 +77,72 @@ describe("messageFail", async () => {
             schema: "test",
         })
 
-        const failResult = await messageFail({
+        await messageRetry({
+            databaseClient: pool,
+            schema: "test",
+            lockMs: 0,
+            id: createResult.id
+        })
+
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
+
+        await messageRetry({
+            databaseClient: pool,
+            schema: "test",
+            lockMs: 0,
+            id: createResult.id
+        })
+
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
+
+        await messageRetry({
+            databaseClient: pool,
+            schema: "test",
+            lockMs: 0,
+            id: createResult.id
+        })
+
+        const message = await pool.query(sql `
+            SELECT * FROM test.message
+            WHERE id = ${valueNode(createResult.id)}
+        `).then(res => res.rows[0])
+        expect(message).toMatchObject({
+            status: MessageStatus.ACCEPTED,
+            num_attempts: 3
+        })
+    })
+
+    it("correctly locks messages when lockMs > 0", async () => {
+        const createResult = await messageCreate({
+            databaseClient: pool,
+            schema: "test",
+            ...testMessageParams,
+        })
+
+        await messageRelease({
             databaseClient: pool,
             schema: "test",
             id: createResult.id,
-            exhaust: false
         })
-        expect(failResult.resultType).toBe("MESSAGE_LOCKED")
+
+        await messageDequeue({
+            databaseClient: pool,
+            schema: "test",
+        })
+
+        const retryResult = await messageRetry({
+            databaseClient: pool,
+            schema: "test",
+            lockMs: 1,
+            id: createResult.id,
+        })
+        expect(retryResult.resultType).toBe("MESSAGE_LOCKED")
 
         const channelState = await pool.query(sql `
             SELECT * FROM test.channel_state
@@ -96,14 +150,19 @@ describe("messageFail", async () => {
         expect(channelState).toMatchObject({
             name: testMessageParams.channelName,
             current_size: 1,
+            next_message_id: null,
+            next_priority: null,
             current_concurrency: 0,
         })
 
-        const status = await pool.query(sql `
-            SELECT status FROM test.message
+        const message = await pool.query(sql `
+            SELECT * FROM test.message
             WHERE id = ${valueNode(createResult.id)}
-        `).then(res => res.rows[0].status)
-        expect(status).toBe(MessageStatus.LOCKED)
+        `).then(res => res.rows[0])
+        expect(message).toMatchObject({
+            status: MessageStatus.LOCKED,
+            num_attempts: 1
+        })
 
         const lockParams = await pool.query(sql `
             SELECT params FROM test.job
@@ -112,12 +171,12 @@ describe("messageFail", async () => {
         expect(lockParams).toMatchObject({ id: createResult.id })
     })
 
-    it("correctly exhausts messages when exhaust is forced", async () => {
+    it("correctly accepts messages when lockMs = 0", async () => {
         const createResult = await messageCreate({
             databaseClient: pool,
             schema: "test",
             ...testMessageParams,
-            numAttempts: 10,
+            priority: 1337
         })
 
         await messageRelease({
@@ -131,20 +190,22 @@ describe("messageFail", async () => {
             schema: "test",
         })
 
-        const failResult = await messageFail({
+        const retryResult = await messageRetry({
             databaseClient: pool,
             schema: "test",
-            id: createResult.id,
-            exhaust: true
+            lockMs: 0,
+            id: createResult.id
         })
-        expect(failResult.resultType).toBe("MESSAGE_EXHAUSTED")
+        expect(retryResult.resultType).toBe("MESSAGE_ACCEPTED")
 
         const channelState = await pool.query(sql `
             SELECT * FROM test.channel_state
         `).then(res => res.rows[0])
         expect(channelState).toMatchObject({
             name: testMessageParams.channelName,
-            current_size: 0,
+            next_message_id: createResult.id,
+            next_priority: 1337,
+            current_size: 1,
             current_concurrency: 0,
         })
 
@@ -153,84 +214,8 @@ describe("messageFail", async () => {
             WHERE id = ${valueNode(createResult.id)}
         `).then(res => res.rows[0])
         expect(message).toMatchObject({
-            status: MessageStatus.EXHAUSTED
-        })
-
-        const deleteJob = await pool.query(sql `
-            SELECT * FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_DELETE)}
-        `).then(res => res.rows[0])
-        expect(deleteJob).toMatchObject({
-            params: { id: createResult.id },
-        })
-    })
-
-    it("correctly exhausts messages when no attempts are remaining", async () => {
-        const createResult = await messageCreate({
-            databaseClient: pool,
-            schema: "test",
-            ...testMessageParams,
-            numAttempts: 1
-        })
-
-        await messageCreate({
-            databaseClient: pool,
-            schema: "test",
-            ...testMessageParams,
-            dependsOn: [createResult.id],
-        })
-
-        await messageRelease({
-            databaseClient: pool,
-            schema: "test",
-            id: createResult.id,
-        })
-
-        await messageDequeue({
-            databaseClient: pool,
-            schema: "test",
-        })
-
-        const failResult = await messageFail({
-            databaseClient: pool,
-            schema: "test",
-            id: createResult.id,
-            exhaust: true
-        })
-        expect(failResult.resultType).toBe("MESSAGE_EXHAUSTED")
-
-        const channelState = await pool.query(sql `
-            SELECT * FROM test.channel_state
-        `).then(res => res.rows[0])
-        expect(channelState).toMatchObject({
-            name: testMessageParams.channelName,
-            current_size: 0,
-            current_concurrency: 0,
-        })
-
-        const message = await pool.query(sql `
-            SELECT * FROM test.message
-            WHERE id = ${valueNode(createResult.id)}
-        `).then(res => res.rows[0])
-        expect(message).toMatchObject({
-            status: MessageStatus.EXHAUSTED
-        })
-
-        const deleteJob = await pool.query(sql `
-            SELECT * FROM test.job
-            WHERE type = ${valueNode(JobType.MESSAGE_DELETE)}
-        `).then(res => res.rows[0])
-        expect(deleteJob).toMatchObject({
-            params: { id: createResult.id },
-        })
-
-        const dependency = await pool.query(sql `
-            SELECT * FROM test.message_parent
-            WHERE parent_message_id = ${valueNode(createResult.id)}
-        `).then(res => res.rows[0])
-        expect(dependency).toMatchObject({
-            message_id: expect.any(String),
-            status: MessageStatus.EXHAUSTED,
+            status: MessageStatus.ACCEPTED,
+            num_attempts: 1
         })
     })
 })

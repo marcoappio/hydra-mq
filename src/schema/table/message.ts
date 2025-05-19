@@ -10,20 +10,13 @@ export const messageInstall = (params: {
             name TEXT,
             channel_name TEXT NOT NULL,
             payload TEXT NOT NULL,
-            result TEXT NULL,
             priority INTEGER NULL,
             channel_priority INTEGER NULL,
-            num_attempts INTEGER NOT NULL,
+            num_attempts INTEGER NOT NULL DEFAULT 0,
             max_processing_ms INTEGER NOT NULL,
-            delay_ms INTEGER NOT NULL,
-            delete_ms INTEGER NOT NULL,
-            lock_ms INTEGER NOT NULL,
-            lock_ms_factor INTEGER NOT NULL,
             status INTEGER NOT NULL,
             is_processed BOOLEAN NOT NULL,
-            num_dependencies INTEGER NOT NULL,
             sweep_after TIMESTAMP,
-            created_at TIMESTAMP,
             accepted_at TIMESTAMP,
             PRIMARY KEY (id)
         );
@@ -34,7 +27,8 @@ export const messageInstall = (params: {
         CREATE UNIQUE INDEX message_name_ix
         ON ${params.schema}.message (
             name
-        ) WHERE status = ${valueNode(MessageStatus.ACCEPTED)} AND NOT is_processed
+        ) WHERE status = ${valueNode(MessageStatus.ACCEPTED)}
+        AND NOT is_processed;
     `,
 
     // Find stale messages to sweep

@@ -1,5 +1,5 @@
 import type { DatabaseClient } from "@src/core/database-client"
-import { arrayNode, refNode, sql, valueNode } from "@src/core/sql"
+import { refNode, sql, valueNode } from "@src/core/sql"
 import { MessageCreateResultCode } from "@src/schema/message-create"
 
 export type MessageCreateResult =
@@ -28,13 +28,8 @@ export const messageCreate = async (params: {
     payload: string
     priority: number | null
     channelPriority: number | null
-    numAttempts: number
     maxProcessingMs: number
-    lockMs: number
-    lockMsFactor: number
     delayMs: number,
-    deleteMs: number,
-    dependsOn: string[],
 }): Promise<MessageCreateResult> => {
     const result = await params.databaseClient.query(sql `
         SELECT * FROM ${refNode(params.schema)}.message_create(
@@ -43,13 +38,8 @@ export const messageCreate = async (params: {
             ${valueNode(params.payload)},
             ${valueNode(params.priority)},
             ${valueNode(params.channelPriority)},
-            ${valueNode(params.numAttempts)},
             ${valueNode(params.maxProcessingMs)},
-            ${valueNode(params.lockMs)},
-            ${valueNode(params.lockMsFactor)},
-            ${valueNode(params.delayMs)},
-            ${valueNode(params.deleteMs)},
-            ${arrayNode(params.dependsOn)}::UUID[]
+            ${valueNode(params.delayMs)}
         ) AS result
     `).then(res => res.rows[0].result) as MessageCreateQueryResult
 

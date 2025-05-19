@@ -8,7 +8,6 @@ export const jobChannelPolicySetInstall = (params: {
         sql `
             CREATE FUNCTION ${params.schema}.job_channel_policy_set(
                 p_name TEXT,
-                p_max_size INTEGER,
                 p_max_concurrency INTEGER
             ) RETURNS VOID AS $$
             DECLARE
@@ -18,7 +17,6 @@ export const jobChannelPolicySetInstall = (params: {
                 v_now := NOW();
                 v_params := JSONB_BUILD_OBJECT(
                     'name', p_name,
-                    'max_size', p_max_size,
                     'max_concurrency', p_max_concurrency
                 );
 
