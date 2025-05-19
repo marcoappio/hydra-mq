@@ -1,3 +1,19 @@
+# v0.9.0 (Mon May 19 2025)
+
+#### 🚀 Enhancement
+
+- Simplification/Rework [#46](https://github.com/marcoappio/hydra-mq/pull/46) ([@tlonny](https://github.com/tlonny))
+
+#### 🐛 Bug Fix
+
+- fix typo [#47](https://github.com/marcoappio/hydra-mq/pull/47) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.8.4 (Mon Apr 28 2025)
 
 #### 🐛 Bug Fix
