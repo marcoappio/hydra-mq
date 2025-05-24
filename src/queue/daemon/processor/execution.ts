@@ -45,7 +45,7 @@ export class DaemonProcessorExecutionModule {
                 break
             }
 
-            let processorResult : ProcessorResult = { resultType: "SUCCESS" }
+            let processorResult : ProcessorResult
             let error : any = null
 
             try {
@@ -70,8 +70,9 @@ export class DaemonProcessorExecutionModule {
                         }
                     }
                 })
+                processorResult ||= { resultType: "SUCCESS" }
             } catch (err) {
-                processorResult = { resultType: "FAIL" }
+                processorResult ||= { resultType: "FAIL" }
                 error = err
             }
 
