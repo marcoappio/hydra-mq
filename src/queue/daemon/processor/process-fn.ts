@@ -10,7 +10,6 @@ export type ProcessorFnParams = {
         channelPriority: number | null
     },
     isStopped: () => boolean
-    setFail: () => void
     setRetry: (params? : { lockMs?: number }) => void
 }
 

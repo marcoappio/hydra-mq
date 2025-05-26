@@ -100,17 +100,9 @@ Channels can be configured to limit their maximum concurrency, ensuring that _at
         .clear({ databaseClient: pool })
 ```
 
-## Success & Failure
-
-Messages are permanently deleted from the database once their processing either succeeds _or_ fails. A message will "fail" if the processor function throws an error _or_ the `setFail` function is explicitly called:
-
-```typescript
-const processorFn : ProcessorFn = async ({ message, setFail }) => {
-    setFail()
-}
-```
-
 ## Retries
+
+Messages are permanently deleted from the database once the processing function either returns or throws.
 
 Messages can be retried by calling the `setRetry` function. An optional `lockMs` can be passed to specify how long you would like the message to be "locked" and unavailable for re-processing. By default this value is `0` - making the message _immediately_ available for re-processing. We can combine the `setRetry` function along with provided message metadata to build completely custom back-off strategies:
 
@@ -119,9 +111,7 @@ const processorFn : ProcessorFn = async ({ message, setFail, setRetry }) => {
     try {
         // Biz logic goes here...
     } catch (err) {
-        if(message.numAttempts >= 5) {
-            setFail()
-        } else {
+        if(message.numAttempts < 5) {
             const baseLockMs = 1_000
             const lockMs = baseLockMs ** message.numAttempts
             setRetry({ lockMs })
@@ -129,8 +119,6 @@ const processorFn : ProcessorFn = async ({ message, setFail, setRetry }) => {
     }
 }
 ```
-
-N.B. We can optionally specify an `exhaust` parameter which instructs HydraMQ to skip further retry attempts - useful if you know the situation is unrecoverable.
 
 ## Prioritizing messages
 
