@@ -58,18 +58,10 @@ export type HydraEventMessageDeletedMessageNotFound = {
     messageId: string
 }
 
-export type HydraEventMessageDeletedMessageDeletedSuccess = {
+export type HydraEventMessageDeletedMessageDeleted = {
     eventType: "MESSAGE_DELETED"
     eventResult: "MESSAGE_DELETED"
     messageId: string
-    isSuccess: true
-}
-
-export type HydraEventMessageDeletedMessageDeletedFailure = {
-    eventType: "MESSAGE_DELETED"
-    eventResult: "MESSAGE_DELETED"
-    messageId: string
-    isSuccess: false
     error: any
 }
 
@@ -139,8 +131,7 @@ export type HydraEvent =
     | HydraEventJobMessageCreateScheduleSet
     | HydraEventMessageCreated
     | HydraEventMessageDequeued
-    | HydraEventMessageDeletedMessageDeletedSuccess
-    | HydraEventMessageDeletedMessageDeletedFailure
+    | HydraEventMessageDeletedMessageDeleted
     | HydraEventMessageDeletedMessageNotFound
     | HydraEventMessageDeletedMessageStatusInvalid
     | HydraEventMessageRetryredMessageAccepted

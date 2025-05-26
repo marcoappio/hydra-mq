@@ -27,8 +27,6 @@ export type {
     HydraEventMessageRetryredMessageLocked,
     HydraEventMessageRetryredMessageNotFound,
     HydraEventMessageRetryredMessageStatusInvalid,
-    HydraEventMessageDeletedMessageDeletedFailure,
-    HydraEventMessageDeletedMessageDeletedSuccess,
     HydraEventMessageDeletedMessageNotFound,
     HydraEventMessageDeletedMessageStatusInvalid,
     HydraEventMessageDequeued,
