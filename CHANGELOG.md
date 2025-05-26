@@ -1,3 +1,15 @@
+# v0.9.2 (Mon May 26 2025)
+
+#### 🐛 Bug Fix
+
+- Tim/simplify [#50](https://github.com/marcoappio/hydra-mq/pull/50) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.9.1 (Mon May 19 2025)
 
 #### 🐛 Bug Fix
