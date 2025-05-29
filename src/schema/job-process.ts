@@ -137,7 +137,6 @@ export const jobProcessInstall = (params : {
                     v_channel_name := v_job.params->>'name';
                     PERFORM ${params.schema}.channel_policy_set(
                         v_channel_name,
-                        (v_job.params->>'max_size')::INTEGER,
                         (v_job.params->>'max_concurrency')::INTEGER
                     );
                     RETURN JSONB_BUILD_OBJECT(
