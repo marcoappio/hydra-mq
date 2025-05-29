@@ -1,3 +1,15 @@
+# v0.9.3 (Thu May 29 2025)
+
+#### 🐛 Bug Fix
+
+- Remove max_size [#51](https://github.com/marcoappio/hydra-mq/pull/51) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.9.2 (Mon May 26 2025)
 
 #### 🐛 Bug Fix
