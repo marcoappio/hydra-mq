@@ -1,3 +1,15 @@
+# v0.9.4 (Mon Jun 30 2025)
+
+#### 🐛 Bug Fix
+
+- Fix hydra scheduling errors [#52](https://github.com/marcoappio/hydra-mq/pull/52) ([@tlonny](https://github.com/tlonny))
+
+#### Authors: 1
+
+- Tim Lonsdale ([@tlonny](https://github.com/tlonny))
+
+---
+
 # v0.9.3 (Thu May 29 2025)
 
 #### 🐛 Bug Fix
