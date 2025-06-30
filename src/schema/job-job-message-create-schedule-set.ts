@@ -41,13 +41,11 @@ export const jobJobMessageCreateScheduleSetInstall = (params: {
             );
 
             INSERT INTO ${params.schema}.job (
-                name,
                 type, 
                 params,
                 is_recurring,
                 process_after
             ) VALUES (
-                p_name,
                 ${valueNode(JobType.JOB_MESSAGE_CREATE_SCHEDULE_SET)},
                 v_params,
                 ${valueNode(false)},

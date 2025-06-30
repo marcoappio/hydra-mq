@@ -17,13 +17,11 @@ export const jobJobMessageCreateScheduleClearInstall = (params: {
             v_params := JSONB_BUILD_OBJECT('name', p_name);
 
             INSERT INTO ${params.schema}.job (
-                name,
                 type, 
                 params,
                 is_recurring,
                 process_after
             ) VALUES (
-                p_name,
                 ${valueNode(JobType.JOB_MESSAGE_CREATE_SCHEDULE_CLEAR)},
                 v_params,
                 ${valueNode(false)},
